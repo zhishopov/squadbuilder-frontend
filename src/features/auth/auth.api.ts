@@ -24,3 +24,5 @@ export const authApi = api.injectEndpoints({
   }),
   overrideExisting: false,
 });
+
+export const { useMeQuery } = authApi;
