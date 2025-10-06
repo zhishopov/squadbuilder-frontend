@@ -1,13 +1,11 @@
-import { useState } from "react";
-import { useNavigate } from "react-router-dom";
 import { useSignupMutation } from "../auth.api";
+import { useState } from "react";
 
 type Props = {
-  onSuccess?: () => void;
+  onSuccess: () => void;
 };
 
 export default function SignupForm({ onSuccess }: Props) {
-  const navigate = useNavigate();
   const [signup, { isLoading }] = useSignupMutation();
 
   const [email, setEmail] = useState("");
@@ -21,19 +19,19 @@ export default function SignupForm({ onSuccess }: Props) {
 
     try {
       await signup({ email, password, role }).unwrap();
-      if (onSuccess) {
-        onSuccess();
-      } else {
-        navigate("/", { replace: true });
-      }
+      onSuccess();
     } catch (error) {
-      setFormError("Signup failed. Try a different email.");
-      console.error(error);
+      console.error("Signup failed:", error);
+      setFormError("Signup failed. Try again or use a different email.");
     }
   }
 
   return (
-    <form onSubmit={submitHandler}>
+    <form
+      onSubmit={submitHandler}
+      className="flex flex-col space-y-4"
+      autoComplete="on"
+    >
       <input
         type="email"
         placeholder="Email address"
@@ -41,6 +39,7 @@ export default function SignupForm({ onSuccess }: Props) {
         onChange={(e) => setEmail(e.target.value)}
         required
         autoComplete="email"
+        className="border border-gray-300 rounded-lg p-2"
       />
 
       <input
@@ -50,6 +49,7 @@ export default function SignupForm({ onSuccess }: Props) {
         onChange={(e) => setPassword(e.target.value)}
         required
         autoComplete="new-password"
+        className="border border-gray-300 rounded-lg p-2"
       />
 
       <select
@@ -57,14 +57,21 @@ export default function SignupForm({ onSuccess }: Props) {
         onChange={(e) =>
           setRole(e.target.value === "COACH" ? "COACH" : "PLAYER")
         }
+        className="border border-gray-300 rounded-lg p-2"
       >
         <option value="COACH">Coach</option>
         <option value="PLAYER">Player</option>
       </select>
 
-      {formError && <p>{formError}</p>}
+      {formError && (
+        <p className="text-red-600 text-sm text-center">{formError}</p>
+      )}
 
-      <button type="submit" disabled={isLoading}>
+      <button
+        type="submit"
+        disabled={isLoading}
+        className="bg-emerald-600 hover:bg-emerald-700 text-white font-semibold py-2 rounded-lg transition"
+      >
         {isLoading ? "Signing up..." : "Sign up"}
       </button>
     </form>
