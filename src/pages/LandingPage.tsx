@@ -1,3 +1,5 @@
+import AuthCard from "../features/auth/components/AuthCard";
+
 export default function LandingPage() {
   return (
     <main className="min-h-screen grid place-items-center">
@@ -7,6 +9,7 @@ export default function LandingPage() {
           Plan fixtures, lineups, and availability.
         </p>
       </div>
+      <AuthCard></AuthCard>
     </main>
   );
 }

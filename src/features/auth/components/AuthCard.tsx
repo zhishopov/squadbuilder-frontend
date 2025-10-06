@@ -30,11 +30,14 @@ export default function AuthCard() {
   };
 
   return (
-    <div>
-      <h2>{isLogin ? "Welcome back!" : "Create an account"}</h2>
+    <div className="w-full max-w-md p-6 bg-white rounded-2xl shadow-lg">
+      <h2 className="text-2xl font-bold text-center text-emerald-600 mb-4">
+        {isLogin ? "Welcome back!" : "Create an account"}
+      </h2>
 
-      <form onSubmit={submitHandler}>
+      <form onSubmit={submitHandler} className="flex flex-col space-y-4">
         <input
+          className="border border-gray-300 rounded-lg p-2"
           type="Email"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
@@ -43,6 +46,7 @@ export default function AuthCard() {
         />
 
         <input
+          className="border border-gray-300 rounded-lg p-2"
           type="password"
           value={password}
           onChange={(e) => setPassword(e.target.value)}
@@ -52,6 +56,7 @@ export default function AuthCard() {
 
         {isLogin && (
           <select
+            className="border border-gray-300 rounded-lg p-2"
             value={role}
             onChange={(e) => setRole(e.target.value as "COACH" | "PLAYER")}
           >
@@ -60,7 +65,11 @@ export default function AuthCard() {
           </select>
         )}
 
-        <button type="submit" disabled={isLoggingIn || isSigningUp}>
+        <button
+          className="bg-emerald-600 hover:bg-emerald-700 text-white font-semibold py-2 rounded-lg transition"
+          type="submit"
+          disabled={isLoggingIn || isSigningUp}
+        >
           {isLogin
             ? isLoggingIn
               ? "Logging in..."
@@ -71,9 +80,12 @@ export default function AuthCard() {
         </button>
       </form>
 
-      <p>
+      <p className="text-sm text-center mt-4">
         {isLogin ? "Don't have an account?" : "Already have an account?"}{" "}
-        <button onClick={() => setIsLogin(!isLogin)}>
+        <button
+          className="text-emerald-600 hover:underline font-semibold"
+          onClick={() => setIsLogin(!isLogin)}
+        >
           {isLogin ? "Sign up" : "Login"}
         </button>
       </p>
