@@ -15,7 +15,6 @@ export default function AuthCard() {
 
   const submitHandler = async (e: React.FormEvent) => {
     e.preventDefault();
-
     try {
       if (isLogin) {
         await login({ email, password }).unwrap();
@@ -38,10 +37,10 @@ export default function AuthCard() {
       <form onSubmit={submitHandler} className="flex flex-col space-y-4">
         <input
           className="border border-gray-300 rounded-lg p-2"
-          type="Email"
+          type="email"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
-          placeholder="email"
+          placeholder="Email"
           required
         />
 
@@ -54,14 +53,14 @@ export default function AuthCard() {
           required
         />
 
-        {isLogin && (
+        {!isLogin && (
           <select
             className="border border-gray-300 rounded-lg p-2"
             value={role}
             onChange={(e) => setRole(e.target.value as "COACH" | "PLAYER")}
           >
-            <option value="coach">Coach</option>
-            <option value="player">Player</option>
+            <option value="COACH">Coach</option>
+            <option value="PLAYER">Player</option>
           </select>
         )}
 
