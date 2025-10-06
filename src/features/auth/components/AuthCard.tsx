@@ -6,7 +6,7 @@ export default function AuthCard() {
   const [isLogin, setIsLogin] = useState(true);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [role, setRole] = useState<"coach" | "player">("player");
+  const [role, setRole] = useState<"COACH" | "PLAYER">("PLAYER");
 
   const navigate = useNavigate();
 
@@ -53,7 +53,7 @@ export default function AuthCard() {
         {isLogin && (
           <select
             value={role}
-            onChange={(e) => setRole(e.target.value as "coach" | "player")}
+            onChange={(e) => setRole(e.target.value as "COACH" | "PLAYER")}
           >
             <option value="coach">Coach</option>
             <option value="player">Player</option>
