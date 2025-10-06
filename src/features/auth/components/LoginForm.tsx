@@ -1,11 +1,14 @@
+import { useNavigate } from "react-router-dom";
 import { useLoginMutation } from "../auth.api";
 import { useState } from "react";
+import { toast } from "sonner";
 
 type Props = {
-  onSuccess: () => void;
+  onSuccess?: () => void;
 };
 
 export default function LoginForm({ onSuccess }: Props) {
+  const navigate = useNavigate();
   const [login, { isLoading }] = useLoginMutation();
 
   const [email, setEmail] = useState("");
@@ -18,26 +21,29 @@ export default function LoginForm({ onSuccess }: Props) {
 
     try {
       await login({ email, password }).unwrap();
-      onSuccess();
+      toast.success("Logged in successfully!");
+      if (onSuccess) onSuccess();
+      else navigate("/dashboard", { replace: true });
     } catch (error) {
-      console.error("Login failed:", error);
-      setFormError("Invalid email or password");
+      const status = (error as { status?: number })?.status;
+      if (status === 400 || status === 401) {
+        setFormError("Invalid email or password.");
+      } else {
+        setFormError("Something went wrong. Please try again.");
+      }
+      toast.error(formError ?? "Login failed");
+      console.error("Login error:", error);
     }
   }
 
   return (
-    <form
-      onSubmit={submitHandler}
-      className="flex flex-col space-y-4"
-      autoComplete="on"
-    >
+    <form onSubmit={submitHandler} className="flex flex-col space-y-3">
       <input
         type="email"
         placeholder="Email address"
         value={email}
         onChange={(e) => setEmail(e.target.value)}
         required
-        autoComplete="email"
         className="border border-gray-300 rounded-lg p-2"
       />
 
@@ -47,20 +53,17 @@ export default function LoginForm({ onSuccess }: Props) {
         value={password}
         onChange={(e) => setPassword(e.target.value)}
         required
-        autoComplete="current-password"
         className="border border-gray-300 rounded-lg p-2"
       />
 
-      {formError && (
-        <p className="text-red-600 text-sm text-center">{formError}</p>
-      )}
+      {formError && <p className="text-red-500 text-sm">{formError}</p>}
 
       <button
         type="submit"
         disabled={isLoading}
-        className="bg-emerald-600 hover:bg-emerald-700 text-white font-semibold py-2 rounded-lg transition"
+        className="bg-emerald-600 hover:bg-emerald-700 text-white font-semibold py-2 rounded-lg transition flex justify-center"
       >
-        {isLoading ? "Logging in..." : "Login"}
+        {isLoading ? <span className="animate-spin">🔄</span> : "Login"}
       </button>
     </form>
   );

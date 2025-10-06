@@ -1,11 +1,10 @@
-import { useSignupMutation } from "../auth.api";
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { useSignupMutation } from "../auth.api";
+import { toast } from "sonner";
 
-type Props = {
-  onSuccess: () => void;
-};
-
-export default function SignupForm({ onSuccess }: Props) {
+export default function SignupForm() {
+  const navigate = useNavigate();
   const [signup, { isLoading }] = useSignupMutation();
 
   const [email, setEmail] = useState("");
@@ -19,19 +18,22 @@ export default function SignupForm({ onSuccess }: Props) {
 
     try {
       await signup({ email, password, role }).unwrap();
-      onSuccess();
+      toast.success("Account created! Please log in.");
+      navigate("/", { replace: true });
     } catch (error) {
-      console.error("Signup failed:", error);
-      setFormError("Signup failed. Try again or use a different email.");
+      const status = (error as { status?: number })?.status;
+      if (status === 409) {
+        setFormError("Email already in use.");
+      } else {
+        setFormError("Something went wrong. Please try again.");
+      }
+      toast.error(formError ?? "Signup failed");
+      console.error("Signup error:", error);
     }
   }
 
   return (
-    <form
-      onSubmit={submitHandler}
-      className="flex flex-col space-y-4"
-      autoComplete="on"
-    >
+    <form onSubmit={submitHandler} className="flex flex-col space-y-3">
       <input
         type="email"
         placeholder="Email address"
@@ -63,16 +65,14 @@ export default function SignupForm({ onSuccess }: Props) {
         <option value="PLAYER">Player</option>
       </select>
 
-      {formError && (
-        <p className="text-red-600 text-sm text-center">{formError}</p>
-      )}
+      {formError && <p className="text-red-500 text-sm">{formError}</p>}
 
       <button
         type="submit"
         disabled={isLoading}
-        className="bg-emerald-600 hover:bg-emerald-700 text-white font-semibold py-2 rounded-lg transition"
+        className="bg-emerald-600 hover:bg-emerald-700 text-white font-semibold py-2 rounded-lg transition flex justify-center"
       >
-        {isLoading ? "Signing up..." : "Sign up"}
+        {isLoading ? <span className="animate-spin">🔄</span> : "Sign up"}
       </button>
     </form>
   );

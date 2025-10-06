@@ -1,11 +1,9 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
 import LoginForm from "./LoginForm";
 import SignupForm from "./SignupForm";
 
 export default function AuthCard() {
   const [isLogin, setIsLogin] = useState(true);
-  const navigate = useNavigate();
 
   return (
     <div className="w-full max-w-md p-6 bg-white rounded-2xl shadow-lg">
@@ -13,14 +11,10 @@ export default function AuthCard() {
         {isLogin ? "Welcome back!" : "Create an account"}
       </h2>
 
-      {isLogin ? (
-        <LoginForm onSuccess={() => navigate("/dashboard")} />
-      ) : (
-        <SignupForm onSuccess={() => setIsLogin(true)} />
-      )}
+      {isLogin ? <LoginForm /> : <SignupForm />}
 
       <p className="text-sm text-center mt-4">
-        {isLogin ? "Don't have an account?" : "Already have an account?"}
+        {isLogin ? "Don't have an account?" : "Already have an account?"}{" "}
         <button
           className="text-emerald-600 hover:underline font-semibold"
           onClick={() => setIsLogin(!isLogin)}
