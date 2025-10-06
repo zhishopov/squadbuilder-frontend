@@ -11,7 +11,11 @@ export default function AuthCard() {
         {isLogin ? "Welcome back!" : "Create an account"}
       </h2>
 
-      {isLogin ? <LoginForm /> : <SignupForm />}
+      {isLogin ? (
+        <LoginForm />
+      ) : (
+        <SignupForm onSuccess={() => setIsLogin(true)} />
+      )}
 
       <p className="text-sm text-center mt-4">
         {isLogin ? "Don't have an account?" : "Already have an account?"}{" "}

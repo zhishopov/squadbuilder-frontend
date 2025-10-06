@@ -1,10 +1,12 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
 import { useSignupMutation } from "../auth.api";
 import { toast } from "sonner";
 
-export default function SignupForm() {
-  const navigate = useNavigate();
+type Props = {
+  onSuccess?: () => void;
+};
+
+export default function SignupForm({ onSuccess }: Props) {
   const [signup, { isLoading }] = useSignupMutation();
 
   const [email, setEmail] = useState("");
@@ -19,15 +21,13 @@ export default function SignupForm() {
     try {
       await signup({ email, password, role }).unwrap();
       toast.success("Account created! Please log in.");
-      navigate("/", { replace: true });
+      if (onSuccess) onSuccess();
     } catch (error) {
       const status = (error as { status?: number })?.status;
-      if (status === 409) {
-        setFormError("Email already in use.");
-      } else {
-        setFormError("Something went wrong. Please try again.");
-      }
-      toast.error(formError ?? "Signup failed");
+      let message = "Something went wrong. Please try again.";
+      if (status === 409) message = "Email already in use.";
+      setFormError(message);
+      toast.error(message);
       console.error("Signup error:", error);
     }
   }
