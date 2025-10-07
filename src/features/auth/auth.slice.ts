@@ -5,10 +5,10 @@ import type { PayloadAction } from "@reduxjs/toolkit";
 
 type AuthStatus = "checking" | "authenticated" | "unauthenticated";
 
-type AuthState = {
+interface AuthState {
   status: AuthStatus;
   user: CurrentUser | null;
-};
+}
 
 const initialState: AuthState = {
   status: "checking",
@@ -22,6 +22,10 @@ const authSlice = createSlice({
     setUser(state, action: PayloadAction<CurrentUser | null>) {
       state.user = action.payload;
       state.status = action.payload ? "authenticated" : "unauthenticated";
+    },
+    clearUser(state) {
+      state.user = null;
+      state.status = "unauthenticated";
     },
   },
   extraReducers: (builder) => {
@@ -45,5 +49,5 @@ const authSlice = createSlice({
   },
 });
 
-export const { setUser } = authSlice.actions;
+export const { setUser, clearUser } = authSlice.actions;
 export const authReducer = authSlice.reducer;
