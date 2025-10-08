@@ -30,6 +30,11 @@ export type Lineup = {
   selectedPlayerIds: number[];
 };
 
+export type SetAvailabilityBody = {
+  fixtureId: number;
+  status: "YES" | "NO" | "MAYBE";
+};
+
 export const dashboardApi = api.injectEndpoints({
   endpoints: (build) => ({
     mySquad: build.query<Squad | null, void>({
@@ -56,6 +61,14 @@ export const dashboardApi = api.injectEndpoints({
         method: "GET",
       }),
     }),
+
+    setAvailability: build.mutation<void, SetAvailabilityBody>({
+      query: ({ fixtureId, status }) => ({
+        url: `/fixtures/${fixtureId}/availability`,
+        method: "POST",
+        body: { status },
+      }),
+    }),
   }),
   overrideExisting: false,
 });
@@ -65,6 +78,7 @@ export const {
   useSquadMembersQuery,
   useFixturesForSquadQuery,
   useLineupByFixtureQuery,
+  useSetAvailabilityMutation,
 } = dashboardApi;
 
 export { skipToken };
