@@ -1,6 +1,7 @@
 import Header from "../components/Header";
 import FixturesCard from "../features/dashboard/components/FixturesCard";
 import MembersCard from "../features/dashboard/components/MembersCard";
+import NextFixtureCard from "../features/dashboard/components/NextFixtureCard";
 import SquadCard from "../features/dashboard/components/SquadCard";
 
 export default function Dashboard() {
@@ -12,6 +13,7 @@ export default function Dashboard() {
         <SquadCard></SquadCard>
         <MembersCard></MembersCard>
         <FixturesCard></FixturesCard>
+        <NextFixtureCard></NextFixtureCard>
       </main>
     </>
   );
