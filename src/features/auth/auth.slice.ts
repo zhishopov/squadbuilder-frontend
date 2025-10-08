@@ -1,13 +1,19 @@
 import { createSlice } from "@reduxjs/toolkit";
 import { authApi } from "./auth.api";
-import type { CurrentUser } from "../../types/auth";
+import type { CurrentUser, Role } from "../../types/auth";
 import type { PayloadAction } from "@reduxjs/toolkit";
 
 type AuthStatus = "checking" | "authenticated" | "unauthenticated";
 
+type NormalizedUser = {
+  id: number;
+  email: string;
+  role: Role;
+};
+
 interface AuthState {
   status: AuthStatus;
-  user: CurrentUser | null;
+  user: NormalizedUser | null;
 }
 
 const initialState: AuthState = {
@@ -20,8 +26,18 @@ const authSlice = createSlice({
   initialState,
   reducers: {
     setUser(state, action: PayloadAction<CurrentUser | null>) {
-      state.user = action.payload;
-      state.status = action.payload ? "authenticated" : "unauthenticated";
+      const payload = action.payload;
+      if (payload && typeof payload.sub === "string") {
+        state.user = {
+          id: Number(payload.sub),
+          email: payload.email,
+          role: payload.role,
+        };
+        state.status = "authenticated";
+      } else {
+        state.user = null;
+        state.status = "unauthenticated";
+      }
     },
     clearUser(state) {
       state.user = null;
@@ -32,7 +48,16 @@ const authSlice = createSlice({
     builder.addMatcher(
       authApi.endpoints.me.matchFulfilled,
       (state, { payload }) => {
-        state.user = payload;
+        if (!payload || typeof payload.sub !== "string") {
+          state.user = null;
+          state.status = "unauthenticated";
+          return;
+        }
+        state.user = {
+          id: Number(payload.sub),
+          email: payload.email,
+          role: payload.role,
+        };
         state.status = "authenticated";
       }
     );
