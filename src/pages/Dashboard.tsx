@@ -4,6 +4,7 @@ import FixturesCard from "../features/dashboard/components/FixturesCard";
 import MembersCard from "../features/dashboard/components/MembersCard";
 import NextFixtureCard from "../features/dashboard/components/NextFixtureCard";
 import SquadCard from "../features/dashboard/components/SquadCard";
+import CreateSquadCard from "../features/squads/components/CreateSquadCard";
 
 export default function Dashboard() {
   return (
@@ -16,6 +17,7 @@ export default function Dashboard() {
         <FixturesCard></FixturesCard>
         <NextFixtureCard></NextFixtureCard>
         <AvailabilityCard></AvailabilityCard>
+        <CreateSquadCard></CreateSquadCard>
       </main>
     </>
   );
