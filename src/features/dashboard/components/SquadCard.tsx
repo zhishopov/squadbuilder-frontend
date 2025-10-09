@@ -18,20 +18,13 @@ export default function SquadCard() {
         <h2 className="text-lg font-semibold mb-2">Your Squad</h2>
         <p className="text-sm text-red-600">
           Failed to load squad (status
-          {(error as { status?: number })?.status || "?"})
+          {(error as { status?: number })?.status ?? "?"})
         </p>
       </section>
     );
   }
 
-  if (!squad) {
-    return (
-      <section className="mb-6 rounded-xl border bg-white p-4 shadow-sm">
-        <h2 className="text-lg font-semibold mb-2">Your Squad</h2>
-        <p className="text-sm text-gray-700">You don't have a squad yet.</p>
-      </section>
-    );
-  }
+  if (!squad) return null;
 
   return (
     <section className="mb-6 rounded-xl border bg-white p-4 shadow-sm">
