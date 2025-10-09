@@ -69,7 +69,7 @@ export const squadsApi = api.injectEndpoints({
 
     lookupUserByEmail: build.mutation<UserLookupResult, UserLookupBody>({
       query: (body) => ({
-        url: `/users:lookup`,
+        url: `/users/lookup`,
         method: "POST",
         body,
       }),
