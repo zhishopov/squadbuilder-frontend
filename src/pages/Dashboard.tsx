@@ -5,7 +5,6 @@ import MembersCard from "../features/dashboard/components/MembersCard";
 import NextFixtureCard from "../features/dashboard/components/NextFixtureCard";
 import SquadCard from "../features/dashboard/components/SquadCard";
 import CreateSquadCard from "../features/squads/components/CreateSquadCard";
-import MembersList from "../features/squads/components/MembersList";
 
 export default function Dashboard() {
   return (
@@ -19,7 +18,6 @@ export default function Dashboard() {
         <NextFixtureCard></NextFixtureCard>
         <AvailabilityCard></AvailabilityCard>
         <CreateSquadCard></CreateSquadCard>
-        <MembersList></MembersList>
       </main>
     </>
   );
