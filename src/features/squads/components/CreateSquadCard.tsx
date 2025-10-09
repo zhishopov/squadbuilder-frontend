@@ -1,11 +1,13 @@
 import { useState } from "react";
 import { useCreateSquadMutation } from "../squads.api";
+import { useMySquadQuery } from "../../dashboard/dashboard.api";
 import { toast } from "sonner";
 
 export default function CreateSquadCard() {
   const [squadName, setSquadName] = useState("");
-  const [createSquad, { isLoading }] = useCreateSquadMutation();
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [createSquad, { isLoading }] = useCreateSquadMutation();
+  const { refetch } = useMySquadQuery();
 
   async function submitHandler(e: React.FormEvent) {
     e.preventDefault();
@@ -20,6 +22,7 @@ export default function CreateSquadCard() {
       const createdSquad = await createSquad({ name: squadName }).unwrap();
       toast.success(`Squad "${createdSquad.name}" created successfully!`);
       setSquadName("");
+      refetch();
     } catch (error) {
       console.error("Create squad error:", error);
       setErrorMessage("Failed to create squad. Please try again.");
