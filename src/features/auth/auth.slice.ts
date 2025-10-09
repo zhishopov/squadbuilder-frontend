@@ -27,9 +27,9 @@ const authSlice = createSlice({
   reducers: {
     setUser(state, action: PayloadAction<CurrentUser | null>) {
       const payload = action.payload;
-      if (payload && typeof payload.sub === "string") {
+      if (payload && typeof payload.id === "string") {
         state.user = {
-          id: Number(payload.sub),
+          id: Number(payload.id),
           email: payload.email,
           role: payload.role,
         };
@@ -48,13 +48,13 @@ const authSlice = createSlice({
     builder.addMatcher(
       authApi.endpoints.me.matchFulfilled,
       (state, { payload }) => {
-        if (!payload || typeof payload.sub !== "string") {
+        if (!payload || typeof payload.id !== "string") {
           state.user = null;
           state.status = "unauthenticated";
           return;
         }
         state.user = {
-          id: Number(payload.sub),
+          id: Number(payload.id),
           email: payload.email,
           role: payload.role,
         };
