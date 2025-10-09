@@ -18,36 +18,40 @@ export default function Squad() {
 
   return (
     <>
-      <Header></Header>
+      <Header />
       <main className="mx-auto max-w-5xl px-4 py-6 space-y-6">
         <h1 className="text-2xl font-bold">My Squad</h1>
 
         {isSquadLoading && (
-          <div className="rounded-xl border bg-white p-4 shadow-sm">
+          <section className="rounded-xl border bg-white p-4 shadow-sm">
             <p className="text-sm text-gray-600">Loading squad…</p>
-          </div>
+          </section>
         )}
 
         {isSquadError && (
-          <div className="rounded-xl border bg-white p-4 shadow-sm">
+          <section className="rounded-xl border bg-white p-4 shadow-sm">
             <p className="text-sm text-red-600">
-              Failed to load squad (status
+              Failed to load squad (status{" "}
               {(squadError as { status?: number })?.status ?? "?"})
             </p>
-          </div>
+          </section>
         )}
 
-        {!isSquadLoading && !mySquad && userRole === "COACH" && (
-          <CreateSquadCard />
-        )}
+        {!isSquadLoading &&
+          !isSquadError &&
+          !mySquad &&
+          userRole === "COACH" && <CreateSquadCard />}
 
-        {!isSquadLoading && !mySquad && userRole === "PLAYER" && (
-          <div className="rounded-xl border bg-white p-4 shadow-sm">
-            <p className="text-sm text-gray-700">
-              You are not part of a squad yet.
-            </p>
-          </div>
-        )}
+        {!isSquadLoading &&
+          !isSquadError &&
+          !mySquad &&
+          userRole === "PLAYER" && (
+            <section className="rounded-xl border bg-white p-4 shadow-sm">
+              <p className="text-sm text-gray-700">
+                You are not part of a squad yet.
+              </p>
+            </section>
+          )}
 
         {mySquad && (
           <>
@@ -58,7 +62,7 @@ export default function Squad() {
               </p>
             </section>
 
-            <MembersList squadId={mySquad.id}></MembersList>
+            <MembersList squadId={mySquad.id} />
           </>
         )}
       </main>
