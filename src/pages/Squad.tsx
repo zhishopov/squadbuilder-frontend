@@ -1,12 +1,11 @@
-// src/pages/Squad.tsx
 import Header from "../components/Header";
+import { Link } from "react-router-dom";
 import { useSelector } from "react-redux";
 import type { RootState } from "../store";
 import {
   useMySquadQuery,
   useSquadMembersQuery,
 } from "../features/dashboard/dashboard.api";
-import CreateSquadCard from "../features/squads/components/CreateSquadCard";
 import MembersList from "../features/squads/components/MembersList";
 
 export default function Squad() {
@@ -35,30 +34,38 @@ export default function Squad() {
         <h1 className="text-2xl font-bold">My Squad</h1>
 
         {isSquadLoading && (
-          <div className="rounded-xl border bg-white p-4 shadow-sm">
+          <section className="rounded-xl border bg-white p-4 shadow-sm">
             <p className="text-sm text-gray-600">Loading squad…</p>
-          </div>
+          </section>
         )}
 
         {isSquadError && (
-          <div className="rounded-xl border bg-white p-4 shadow-sm">
+          <section className="rounded-xl border bg-white p-4 shadow-sm">
             <p className="text-sm text-red-600">
-              Failed to load squad (status{" "}
+              Failed to load squad (status
               {(squadError as { status?: number })?.status ?? "?"})
             </p>
-          </div>
+          </section>
         )}
 
         {!isSquadLoading && !mySquad && userRole === "COACH" && (
-          <CreateSquadCard />
+          <section className="rounded-xl border bg-white p-4 shadow-sm">
+            <p className="text-sm text-gray-700">
+              You don't have a squad yet. Go to your{" "}
+              <Link to="/dashboard" className="text-emerald-700 underline">
+                Dashboard
+              </Link>{" "}
+              to create one.
+            </p>
+          </section>
         )}
 
         {!isSquadLoading && !mySquad && userRole === "PLAYER" && (
-          <div className="rounded-xl border bg-white p-4 shadow-sm">
+          <section className="rounded-xl border bg-white p-4 shadow-sm">
             <p className="text-sm text-gray-700">
               You are not part of a squad yet.
             </p>
-          </div>
+          </section>
         )}
 
         {mySquad && (
@@ -69,7 +76,7 @@ export default function Squad() {
                 <p className="text-sm text-gray-600">Loading members…</p>
               ) : isMembersError ? (
                 <p className="text-sm text-red-600">
-                  Failed to load members (status{" "}
+                  Failed to load members (status
                   {(membersError as { status?: number })?.status ?? "?"})
                 </p>
               ) : (
