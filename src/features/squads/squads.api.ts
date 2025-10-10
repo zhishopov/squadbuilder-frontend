@@ -20,6 +20,7 @@ export type CreateSquadBody = {
 
 export type AddMemberBody = {
   userId: number;
+  preferredPosition?: string;
 };
 
 export type UserLookupBody = {
@@ -58,12 +59,12 @@ export const squadsApi = api.injectEndpoints({
 
     addMemberToSquad: build.mutation<
       { ok: true },
-      { squadId: number; userId: number }
+      { squadId: number; userId: number; preferredPosition?: string }
     >({
-      query: ({ squadId, userId }) => ({
+      query: ({ squadId, userId, preferredPosition }) => ({
         url: `/squads/${squadId}/members`,
         method: "POST",
-        body: { userId },
+        body: { userId, preferredPosition },
       }),
     }),
 

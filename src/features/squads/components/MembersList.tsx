@@ -1,4 +1,6 @@
 import { useState } from "react";
+import { useSelector } from "react-redux";
+import type { RootState } from "../../../store";
 import {
   useGetSquadMembersQuery,
   useLookupUserByEmailMutation,
@@ -10,6 +12,9 @@ type MembersListProps = {
 };
 
 export default function MembersList({ squadId }: MembersListProps) {
+  const currentUserRole =
+    useSelector((state: RootState) => state.auth.user?.role) ?? null;
+
   const {
     data: squadMembers,
     isLoading: isMembersLoading,
@@ -29,24 +34,17 @@ export default function MembersList({ squadId }: MembersListProps) {
   async function handleAddMember(event: React.FormEvent) {
     event.preventDefault();
     setFeedbackMessage(null);
-
     if (!memberEmailInput.trim() || !squadId) return;
 
     try {
       const foundUser = await lookupUserByEmail({
         email: memberEmailInput,
       }).unwrap();
-
       if (foundUser.role !== "PLAYER") {
         setFeedbackMessage("User must be a PLAYER to join a squad.");
         return;
       }
-
-      await addMemberToSquad({
-        squadId,
-        userId: foundUser.id,
-      }).unwrap();
-
+      await addMemberToSquad({ squadId, userId: foundUser.id }).unwrap();
       setFeedbackMessage(`Added ${foundUser.email} to the squad.`);
       setMemberEmailInput("");
       refetchMembers();
@@ -66,26 +64,28 @@ export default function MembersList({ squadId }: MembersListProps) {
     <section className="rounded-xl border bg-white p-4 shadow-sm">
       <h2 className="text-lg font-semibold mb-3">Members</h2>
 
-      <form onSubmit={handleAddMember} className="mb-4 flex gap-2">
-        <input
-          type="email"
-          placeholder="player@email.com"
-          className="flex-1 rounded-md border border-gray-300 px-3 py-2 text-sm"
-          value={memberEmailInput}
-          onChange={(e) => setMemberEmailInput(e.target.value)}
-          required
-          autoComplete="email"
-        />
-        <button
-          type="submit"
-          className="rounded-md bg-emerald-600 px-3 py-2 text-white text-sm hover:bg-emerald-700 disabled:opacity-60"
-          disabled={
-            isLookupLoading || isAddMemberLoading || !memberEmailInput.trim()
-          }
-        >
-          {isLookupLoading || isAddMemberLoading ? "Adding…" : "Add member"}
-        </button>
-      </form>
+      {currentUserRole === "COACH" && (
+        <form onSubmit={handleAddMember} className="mb-4 flex gap-2">
+          <input
+            type="email"
+            placeholder="player@email.com"
+            className="flex-1 rounded-md border border-gray-300 px-3 py-2 text-sm"
+            value={memberEmailInput}
+            onChange={(e) => setMemberEmailInput(e.target.value)}
+            required
+            autoComplete="email"
+          />
+          <button
+            type="submit"
+            className="rounded-md bg-emerald-600 px-3 py-2 text-white text-sm hover:bg-emerald-700 disabled:opacity-60"
+            disabled={
+              isLookupLoading || isAddMemberLoading || !memberEmailInput.trim()
+            }
+          >
+            {isLookupLoading || isAddMemberLoading ? "Adding…" : "Add member"}
+          </button>
+        </form>
+      )}
 
       {feedbackMessage && (
         <p className="mb-3 text-sm text-gray-700">{feedbackMessage}</p>
@@ -95,7 +95,7 @@ export default function MembersList({ squadId }: MembersListProps) {
         <p className="text-sm text-gray-600">Loading members…</p>
       ) : hasMembersError ? (
         <p className="text-sm text-red-600">
-          Failed to load members (status{" "}
+          Failed to load members (status
           {(membersError as { status?: number })?.status ?? "?"})
         </p>
       ) : !squadMembers || squadMembers.length === 0 ? (
