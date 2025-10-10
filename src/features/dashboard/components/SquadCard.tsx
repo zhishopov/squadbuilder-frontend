@@ -1,9 +1,22 @@
-import { useMySquadQuery } from "../dashboard.api";
+import { useMySquadQuery, useSquadMembersQuery } from "../dashboard.api";
 
 export default function SquadCard() {
-  const { data: squad, isLoading, isError, error } = useMySquadQuery();
+  const {
+    data: currentSquad,
+    isLoading: isSquadLoading,
+    isError: isSquadError,
+    error: squadError,
+  } = useMySquadQuery();
 
-  if (isLoading) {
+  const squadId = currentSquad?.id ?? 0;
+
+  const {
+    data: squadMembers,
+    isLoading: isMembersLoading,
+    isError: isMembersError,
+  } = useSquadMembersQuery(squadId, { skip: !squadId });
+
+  if (isSquadLoading || isMembersLoading) {
     return (
       <section className="mb-6 rounded-xl border bg-white p-4 shadow-sm">
         <h2 className="text-lg font-semibold mb-2">Your Squad</h2>
@@ -12,19 +25,19 @@ export default function SquadCard() {
     );
   }
 
-  if (isError) {
+  if (isSquadError) {
     return (
       <section className="mb-6 rounded-xl border bg-white p-4 shadow-sm">
         <h2 className="text-lg font-semibold mb-2">Your Squad</h2>
         <p className="text-sm text-red-600">
           Failed to load squad (status
-          {(error as { status?: number })?.status || "?"})
+          {(squadError as { status?: number })?.status ?? "?"})
         </p>
       </section>
     );
   }
 
-  if (!squad) {
+  if (!currentSquad) {
     return (
       <section className="mb-6 rounded-xl border bg-white p-4 shadow-sm">
         <h2 className="text-lg font-semibold mb-2">Your Squad</h2>
@@ -33,15 +46,25 @@ export default function SquadCard() {
     );
   }
 
+  if (isMembersError) {
+    return (
+      <section className="mb-6 rounded-xl border bg-white p-4 shadow-sm">
+        <h2 className="text-lg font-semibold mb-2">Your Squad</h2>
+        <p className="text-sm text-red-600">Failed to load members.</p>
+      </section>
+    );
+  }
+
+  const memberCount = squadMembers?.length ?? 0;
+
   return (
     <section className="mb-6 rounded-xl border bg-white p-4 shadow-sm">
       <h2 className="text-lg font-semibold mb-2">Your Squad</h2>
       <p className="text-sm">
-        <span className="font-medium">Name:</span> {squad.name}
+        <span className="font-medium">Name:</span> {currentSquad.name}
       </p>
       <p className="text-sm">
-        <span className="font-medium">Members:</span>
-        {squad.membersCount ?? "—"}
+        <span className="font-medium">Members:</span> {memberCount}
       </p>
     </section>
   );
