@@ -11,6 +11,23 @@ type MembersListProps = {
   squadId: number;
 };
 
+const POSITION_OPTIONS = [
+  "UNASSIGNED",
+  "GK",
+  "RB",
+  "CB",
+  "LB",
+  "RWB",
+  "LWB",
+  "CDM",
+  "CM",
+  "CAM",
+  "RW",
+  "LW",
+  "ST",
+  "CF",
+] as const;
+
 export default function MembersList({ squadId }: MembersListProps) {
   const currentUserRole =
     useSelector((state: RootState) => state.auth.user?.role) ?? null;
@@ -29,6 +46,8 @@ export default function MembersList({ squadId }: MembersListProps) {
     useAddMemberToSquadMutation();
 
   const [memberEmailInput, setMemberEmailInput] = useState("");
+  const [preferredPositionInput, setPreferredPositionInput] =
+    useState<string>("UNASSIGNED");
   const [feedbackMessage, setFeedbackMessage] = useState<string | null>(null);
 
   async function handleAddMember(event: React.FormEvent) {
@@ -40,13 +59,21 @@ export default function MembersList({ squadId }: MembersListProps) {
       const foundUser = await lookupUserByEmail({
         email: memberEmailInput,
       }).unwrap();
+
       if (foundUser.role !== "PLAYER") {
         setFeedbackMessage("User must be a PLAYER to join a squad.");
         return;
       }
-      await addMemberToSquad({ squadId, userId: foundUser.id }).unwrap();
+
+      await addMemberToSquad({
+        squadId,
+        userId: foundUser.id,
+        preferredPosition: preferredPositionInput,
+      }).unwrap();
+
       setFeedbackMessage(`Added ${foundUser.email} to the squad.`);
       setMemberEmailInput("");
+      setPreferredPositionInput("UNASSIGNED");
       refetchMembers();
     } catch (error) {
       const status = (error as { status?: number })?.status;
@@ -65,16 +92,32 @@ export default function MembersList({ squadId }: MembersListProps) {
       <h2 className="text-lg font-semibold mb-3">Members</h2>
 
       {currentUserRole === "COACH" && (
-        <form onSubmit={handleAddMember} className="mb-4 flex gap-2">
+        <form
+          onSubmit={handleAddMember}
+          className="mb-4 grid grid-cols-1 sm:grid-cols-[1fr_auto_auto] gap-2"
+        >
           <input
             type="email"
             placeholder="player@email.com"
-            className="flex-1 rounded-md border border-gray-300 px-3 py-2 text-sm"
+            className="rounded-md border border-gray-300 px-3 py-2 text-sm"
             value={memberEmailInput}
             onChange={(e) => setMemberEmailInput(e.target.value)}
             required
             autoComplete="email"
           />
+
+          <select
+            className="rounded-md border border-gray-300 px-3 py-2 text-sm"
+            value={preferredPositionInput}
+            onChange={(e) => setPreferredPositionInput(e.target.value)}
+          >
+            {POSITION_OPTIONS.map((position) => (
+              <option key={position} value={position}>
+                {position}
+              </option>
+            ))}
+          </select>
+
           <button
             type="submit"
             className="rounded-md bg-emerald-600 px-3 py-2 text-white text-sm hover:bg-emerald-700 disabled:opacity-60"
@@ -112,6 +155,9 @@ export default function MembersList({ squadId }: MembersListProps) {
                 <p className="text-gray-500">
                   Role: <span className="uppercase">{member.role}</span>
                 </p>
+              </div>
+              <div className="text-xs text-gray-600">
+                {member.preferredPosition ?? "UNASSIGNED"}
               </div>
             </li>
           ))}
