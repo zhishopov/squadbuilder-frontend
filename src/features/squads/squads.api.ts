@@ -1,7 +1,7 @@
 import { api } from "../../utils/api";
 
 export type Member = {
-  id: number;
+  userId: number;
   email: string;
   role: "COACH" | "PLAYER";
   preferredPosition?: string | null;

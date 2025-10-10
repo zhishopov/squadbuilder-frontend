@@ -147,7 +147,7 @@ export default function MembersList({ squadId }: MembersListProps) {
         <ul className="divide-y divide-gray-100">
           {squadMembers.map((member) => (
             <li
-              key={member.id}
+              key={member.userId}
               className="py-2 text-sm flex items-center justify-between"
             >
               <div>
