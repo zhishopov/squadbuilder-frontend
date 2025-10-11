@@ -64,7 +64,8 @@ export default function FixturesList({ squadId }: FixturesListProps) {
               <p className="font-medium text-gray-800">vs {fixture.opponent}</p>
               <p className="text-sm text-gray-600">
                 {new Date(fixture.date).toLocaleString()}
-                {fixture.location && ` - ${fixture.location}`}
+                {fixture.location &&
+                  ` - ${fixture.location} - ${fixture.notes}`}
               </p>
             </div>
 

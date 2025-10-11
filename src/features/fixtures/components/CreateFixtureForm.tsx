@@ -21,6 +21,7 @@ export default function CreateFixtureForm({
   const [opponent, setOpponent] = useState("");
   const [date, setDate] = useState("");
   const [location, setLocation] = useState("");
+  const [notes, setNotes] = useState("");
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   if (currentUserRole !== "COACH") return null;
@@ -44,17 +45,19 @@ export default function CreateFixtureForm({
         opponent: opponent.trim(),
         date,
         location: location.trim() || undefined,
+        notes: notes.trim() || undefined,
       }).unwrap();
 
       toast.success("Fixture created successfully!");
       setOpponent("");
       setDate("");
       setLocation("");
+      setNotes("");
       onCreated?.();
     } catch (error) {
-      console.log(error);
       toast.error("Failed to create fixture");
       setErrorMessage("Failed to create fixture. Please try again.");
+      console.log(error);
     }
   }
 
@@ -84,6 +87,14 @@ export default function CreateFixtureForm({
           className="rounded-md border border-gray-300 px-3 py-2 text-sm"
           value={location}
           onChange={(e) => setLocation(e.target.value)}
+        />
+
+        <textarea
+          placeholder="Notes (optional)"
+          className="rounded-md border border-gray-300 px-3 py-2 text-sm"
+          value={notes}
+          onChange={(e) => setNotes(e.target.value)}
+          rows={3}
         />
 
         {errorMessage && <p className="text-sm text-red-600">{errorMessage}</p>}
