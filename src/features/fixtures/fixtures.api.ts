@@ -13,7 +13,7 @@ export type Fixture = {
 export type CreateFixtureBody = {
   squadId: number;
   opponent: string;
-  date: string;
+  kickoffAt: string;
   location?: string | null;
   notes?: string | null;
 };

@@ -19,7 +19,7 @@ export default function CreateFixtureForm({
   const [createFixture, { isLoading }] = useCreateFixtureMutation();
 
   const [opponent, setOpponent] = useState("");
-  const [date, setDate] = useState("");
+  const [dateTimeLocal, setDateTimeLocal] = useState("");
   const [location, setLocation] = useState("");
   const [notes, setNotes] = useState("");
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -34,23 +34,25 @@ export default function CreateFixtureForm({
       setErrorMessage("Opponent name is required.");
       return;
     }
-    if (!date.trim()) {
+    if (!dateTimeLocal.trim()) {
       setErrorMessage("Please select a date and time.");
       return;
     }
+
+    const dateISO = new Date(dateTimeLocal).toISOString();
 
     try {
       await createFixture({
         squadId,
         opponent: opponent.trim(),
-        date,
+        kickoffAt: dateISO,
         location: location.trim() || undefined,
         notes: notes.trim() || undefined,
       }).unwrap();
 
       toast.success("Fixture created successfully!");
       setOpponent("");
-      setDate("");
+      setDateTimeLocal("");
       setLocation("");
       setNotes("");
       onCreated?.();
@@ -77,8 +79,8 @@ export default function CreateFixtureForm({
         <input
           type="datetime-local"
           className="rounded-md border border-gray-300 px-3 py-2 text-sm"
-          value={date}
-          onChange={(e) => setDate(e.target.value)}
+          value={dateTimeLocal}
+          onChange={(e) => setDateTimeLocal(e.target.value)}
         />
 
         <input
