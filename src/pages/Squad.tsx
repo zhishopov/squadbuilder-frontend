@@ -7,6 +7,7 @@ import {
   useSquadMembersQuery,
 } from "../features/dashboard/dashboard.api";
 import MembersList from "../features/squads/components/MembersList";
+import FixturesList from "../features/fixtures/components/FixturesList";
 
 export default function Squad() {
   const currentUser = useSelector((state: RootState) => state.auth.user);
@@ -87,6 +88,7 @@ export default function Squad() {
             </section>
 
             <MembersList squadId={mySquad.id} />
+            <FixturesList squadId={mySquad.id}></FixturesList>
           </>
         )}
       </main>
