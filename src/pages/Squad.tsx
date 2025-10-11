@@ -8,6 +8,7 @@ import {
 } from "../features/dashboard/dashboard.api";
 import MembersList from "../features/squads/components/MembersList";
 import FixturesList from "../features/fixtures/components/FixturesList";
+import CreateFixtureForm from "../features/fixtures/components/CreateFixtureForm";
 
 export default function Squad() {
   const currentUser = useSelector((state: RootState) => state.auth.user);
@@ -89,6 +90,7 @@ export default function Squad() {
 
             <MembersList squadId={mySquad.id} />
             <FixturesList squadId={mySquad.id}></FixturesList>
+            <CreateFixtureForm squadId={mySquad.id}></CreateFixtureForm>
           </>
         )}
       </main>
