@@ -16,10 +16,11 @@ export type Member = {
 
 export type Fixture = {
   id: number;
-  date: string;
   opponent: string;
   squadId: number;
-  location?: string;
+  kickoffAt: string;
+  location?: string | null;
+  notes?: string | null;
   status?: "UPCOMING" | "COMPLETED" | "CANCELLED";
 };
 
@@ -53,6 +54,33 @@ export const dashboardApi = api.injectEndpoints({
         url: `/squads/${squadId}/fixtures`,
         method: "GET",
       }),
+      transformResponse: (fixturesResponse: unknown): Fixture[] => {
+        if (!Array.isArray(fixturesResponse)) return [];
+
+        return fixturesResponse.map((item: Record<string, unknown>) => {
+          const dateValue =
+            (item.kickoffAt as string | null | undefined) ??
+            (item.kickoff_at as string | null | undefined) ??
+            (item.date as string | null | undefined) ??
+            null;
+
+          const kickoffAt = dateValue ? new Date(dateValue).toISOString() : "";
+
+          return {
+            id: Number(item.id),
+            opponent: String(item.opponent ?? ""),
+            squadId: Number(
+              (item.squadId as number | undefined) ??
+                (item.squad_id as number | undefined) ??
+                0
+            ),
+            kickoffAt,
+            location: (item.location as string | null | undefined) ?? null,
+            notes: (item.notes as string | null | undefined) ?? null,
+            status: (item.status as Fixture["status"]) ?? "UPCOMING",
+          };
+        });
+      },
     }),
 
     lineupByFixture: build.query<Lineup, number>({

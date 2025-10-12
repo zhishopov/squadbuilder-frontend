@@ -6,7 +6,10 @@ import {
   useMySquadQuery,
   useSquadMembersQuery,
 } from "../features/dashboard/dashboard.api";
+import { useFixturesBySquadQuery } from "../features/fixtures/fixtures.api";
 import MembersList from "../features/squads/components/MembersList";
+import FixturesList from "../features/fixtures/components/FixturesList";
+import CreateFixtureForm from "../features/fixtures/components/CreateFixtureForm";
 
 export default function Squad() {
   const currentUser = useSelector((state: RootState) => state.auth.user);
@@ -20,12 +23,17 @@ export default function Squad() {
   } = useMySquadQuery();
 
   const squadId = mySquad?.id ?? 0;
+
   const {
     data: members,
     isLoading: isMembersLoading,
     isError: isMembersError,
     error: membersError,
   } = useSquadMembersQuery(squadId, { skip: !squadId });
+
+  const { refetch: refetchFixtures } = useFixturesBySquadQuery(squadId, {
+    skip: !squadId,
+  });
 
   return (
     <>
@@ -42,7 +50,7 @@ export default function Squad() {
         {isSquadError && (
           <section className="rounded-xl border bg-white p-4 shadow-sm">
             <p className="text-sm text-red-600">
-              Failed to load squad (status
+              Failed to load squad (status{" "}
               {(squadError as { status?: number })?.status ?? "?"})
             </p>
           </section>
@@ -51,10 +59,10 @@ export default function Squad() {
         {!isSquadLoading && !mySquad && userRole === "COACH" && (
           <section className="rounded-xl border bg-white p-4 shadow-sm">
             <p className="text-sm text-gray-700">
-              You don't have a squad yet. Go to your{" "}
+              You don't have a squad yet. Go to your
               <Link to="/dashboard" className="text-emerald-700 underline">
                 Dashboard
-              </Link>{" "}
+              </Link>
               to create one.
             </p>
           </section>
@@ -87,6 +95,13 @@ export default function Squad() {
             </section>
 
             <MembersList squadId={mySquad.id} />
+
+            <FixturesList squadId={mySquad.id}></FixturesList>
+
+            <CreateFixtureForm
+              squadId={mySquad.id}
+              onCreated={() => refetchFixtures()}
+            ></CreateFixtureForm>
           </>
         )}
       </main>

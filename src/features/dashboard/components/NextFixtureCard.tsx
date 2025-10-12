@@ -23,7 +23,8 @@ export default function NextFixtureCard() {
     fixtures
       ?.filter((fixture) => fixture.status === "UPCOMING" || !fixture.status)
       .sort(
-        (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()
+        (a, b) =>
+          new Date(a.kickoffAt).getTime() - new Date(b.kickoffAt).getTime()
       )[0] ?? null;
 
   const { data: lineup, isLoading: lineupLoading } = useLineupByFixtureQuery(
@@ -73,9 +74,12 @@ export default function NextFixtureCard() {
       <div className="text-sm">
         <p className="font-medium">{nextFixture.opponent}</p>
         <p className="text-gray-500">
-          {new Date(nextFixture.date).toLocaleString()}
-          {nextFixture.location && `— ${nextFixture.location}`}
+          {new Date(nextFixture.kickoffAt).toLocaleString()}
+          {nextFixture.location && ` — ${nextFixture.location}`}
         </p>
+        {nextFixture.notes && (
+          <p className="text-xs text-gray-600 mt-1">{nextFixture.notes}</p>
+        )}
       </div>
 
       {lineupLoading ? (
