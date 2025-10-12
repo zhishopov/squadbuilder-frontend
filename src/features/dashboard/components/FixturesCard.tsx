@@ -50,9 +50,12 @@ export default function FixturesCard() {
           <li key={fixture.id} className="py-2 text-sm">
             <p className="font-medium">{fixture.opponent}</p>
             <p className="text-gray-500">
-              {new Date(fixture.date).toLocaleString()}
-              {fixture.location && `— ${fixture.location}`}
+              {new Date(fixture.kickoffAt).toLocaleString()}
+              {fixture.location && ` — ${fixture.location}`}
             </p>
+            {fixture.notes && (
+              <p className="text-xs text-gray-600 mt-1">{fixture.notes}</p>
+            )}
           </li>
         ))}
       </ul>
