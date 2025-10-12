@@ -33,12 +33,29 @@ export const fixturesApi = api.injectEndpoints({
         url: `/squads/${squadId}/fixtures`,
         method: "GET",
       }),
+      transformResponse: (rows: Array<Record<string, unknown>>): Fixture[] =>
+        rows.map((row) => ({
+          id: Number(row.id),
+          opponent: String(row.opponent ?? ""),
+          squadId: Number(row.squad_id),
+          kickoffAt: String(row.kickoff_at),
+          location: (row.location ?? null) as string | null,
+          notes: (row.notes ?? null) as string | null,
+        })),
     }),
 
     fixtureById: build.query<Fixture, number>({
       query: (fixtureId) => ({
         url: `/fixtures/${fixtureId}`,
         method: "GET",
+      }),
+      transformResponse: (data: Record<string, unknown>): Fixture => ({
+        id: Number(data.id),
+        opponent: String(data.opponent ?? ""),
+        squadId: Number(data.squadId ?? data.squad_id),
+        kickoffAt: String(data.kickoffAt ?? data.kickoff_at ?? ""),
+        location: (data.location ?? null) as string | null,
+        notes: (data.notes ?? null) as string | null,
       }),
     }),
 
@@ -47,6 +64,14 @@ export const fixturesApi = api.injectEndpoints({
         url: "/fixtures",
         method: "POST",
         body,
+      }),
+      transformResponse: (data: Record<string, unknown>): Fixture => ({
+        id: Number(data.id),
+        opponent: String(data.opponent ?? ""),
+        squadId: Number(data.squadId ?? data.squad_id),
+        kickoffAt: String(data.kickoffAt ?? data.kickoff_at ?? ""),
+        location: (data.location ?? null) as string | null,
+        notes: (data.notes ?? null) as string | null,
       }),
     }),
 
@@ -58,6 +83,14 @@ export const fixturesApi = api.injectEndpoints({
         url: `/fixtures/${fixtureId}`,
         method: "PATCH",
         body,
+      }),
+      transformResponse: (data: Record<string, unknown>): Fixture => ({
+        id: Number(data.id),
+        opponent: String(data.opponent ?? ""),
+        squadId: Number(data.squadId ?? data.squad_id),
+        kickoffAt: String(data.kickoffAt ?? data.kickoff_at ?? ""),
+        location: (data.location ?? null) as string | null,
+        notes: (data.notes ?? null) as string | null,
       }),
     }),
 
