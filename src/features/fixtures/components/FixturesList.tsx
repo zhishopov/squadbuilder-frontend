@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { Link } from "react-router-dom";
 import { useSelector } from "react-redux";
 import type { RootState } from "../../../store";
 import {
@@ -24,7 +25,6 @@ export default function FixturesList({ squadId }: FixturesListProps) {
   } = useFixturesBySquadQuery(squadId, { skip: !squadId });
 
   const [deleteFixture, { isLoading: isDeleting }] = useDeleteFixtureMutation();
-
   const [editingFixtureId, setEditingFixtureId] = useState<number | null>(null);
 
   async function handleDelete(fixtureId: number) {
@@ -81,11 +81,9 @@ export default function FixturesList({ squadId }: FixturesListProps) {
       <ul className="divide-y divide-gray-100">
         {fixtures.map((fixture) => {
           const isEditing = editingFixtureId === fixture.id;
+
           return (
-            <li
-              key={fixture.id}
-              className="py-3 flex flex-col sm:flex-col gap-2"
-            >
+            <li key={fixture.id} className="py-3 flex flex-col gap-2">
               <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
                 <div>
                   <p className="font-medium text-gray-800">
@@ -98,34 +96,43 @@ export default function FixturesList({ squadId }: FixturesListProps) {
                   </p>
                 </div>
 
-                {currentUserRole === "COACH" && (
-                  <div className="mt-2 sm:mt-0 flex gap-2">
-                    {!isEditing ? (
-                      <>
+                <div className="mt-2 sm:mt-0 flex flex-wrap gap-3">
+                  <Link
+                    to={`/fixtures/${fixture.id}`}
+                    className="text-sm text-emerald-700 hover:underline"
+                  >
+                    View details
+                  </Link>
+
+                  {currentUserRole === "COACH" && (
+                    <>
+                      {!isEditing ? (
+                        <>
+                          <button
+                            onClick={() => setEditingFixtureId(fixture.id)}
+                            className="text-sm text-indigo-600 hover:underline"
+                          >
+                            Edit
+                          </button>
+                          <button
+                            onClick={() => handleDelete(fixture.id)}
+                            disabled={isDeleting}
+                            className="text-sm text-red-600 hover:underline disabled:opacity-60"
+                          >
+                            {isDeleting ? "Deleting…" : "Delete"}
+                          </button>
+                        </>
+                      ) : (
                         <button
-                          onClick={() => setEditingFixtureId(fixture.id)}
-                          className="text-sm text-indigo-600 hover:underline"
+                          onClick={() => setEditingFixtureId(null)}
+                          className="text-sm text-gray-600 hover:underline"
                         >
-                          Edit
+                          Cancel
                         </button>
-                        <button
-                          onClick={() => handleDelete(fixture.id)}
-                          disabled={isDeleting}
-                          className="text-sm text-red-600 hover:underline disabled:opacity-60"
-                        >
-                          {isDeleting ? "Deleting…" : "Delete"}
-                        </button>
-                      </>
-                    ) : (
-                      <button
-                        onClick={() => setEditingFixtureId(null)}
-                        className="text-sm text-gray-600 hover:underline"
-                      >
-                        Cancel
-                      </button>
-                    )}
-                  </div>
-                )}
+                      )}
+                    </>
+                  )}
+                </div>
               </div>
 
               {isEditing && currentUserRole === "COACH" && (
