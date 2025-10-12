@@ -1,6 +1,11 @@
+import { useState } from "react";
 import { useSelector } from "react-redux";
 import type { RootState } from "../../../store";
-import { useFixturesBySquadQuery } from "../fixtures.api";
+import {
+  useFixturesBySquadQuery,
+  useDeleteFixtureMutation,
+} from "../fixtures.api";
+import EditFixtureForm from "./EditFixtureForm";
 
 type FixturesListProps = {
   squadId: number;
@@ -15,7 +20,26 @@ export default function FixturesList({ squadId }: FixturesListProps) {
     isLoading,
     isError,
     error,
+    refetch,
   } = useFixturesBySquadQuery(squadId, { skip: !squadId });
+
+  const [deleteFixture, { isLoading: isDeleting }] = useDeleteFixtureMutation();
+
+  const [editingFixtureId, setEditingFixtureId] = useState<number | null>(null);
+
+  async function handleDelete(fixtureId: number) {
+    const confirmed = window.confirm(
+      "Are you sure you want to delete this fixture?"
+    );
+    if (!confirmed) return;
+
+    try {
+      await deleteFixture(fixtureId).unwrap();
+      await refetch();
+    } catch {
+      alert("Failed to delete fixture. Please try again.");
+    }
+  }
 
   if (isLoading) {
     return (
@@ -55,32 +79,72 @@ export default function FixturesList({ squadId }: FixturesListProps) {
       <h2 className="text-lg font-semibold mb-3">Fixtures</h2>
 
       <ul className="divide-y divide-gray-100">
-        {fixtures.map((fixture) => (
-          <li
-            key={fixture.id}
-            className="py-3 flex flex-col sm:flex-row sm:items-center sm:justify-between"
-          >
-            <div>
-              <p className="font-medium text-gray-800">vs {fixture.opponent}</p>
-              <p className="text-sm text-gray-600">
-                {new Date(fixture.date).toLocaleString()}
-                {fixture.location &&
-                  ` - ${fixture.location} - ${fixture.notes}`}
-              </p>
-            </div>
+        {fixtures.map((fixture) => {
+          const isEditing = editingFixtureId === fixture.id;
+          return (
+            <li
+              key={fixture.id}
+              className="py-3 flex flex-col sm:flex-col gap-2"
+            >
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
+                <div>
+                  <p className="font-medium text-gray-800">
+                    vs {fixture.opponent}
+                  </p>
+                  <p className="text-sm text-gray-600">
+                    {new Date(fixture.kickoffAt).toLocaleString()}
+                    {fixture.location && ` - ${fixture.location}`}
+                    {fixture.notes && ` - ${fixture.notes}`}
+                  </p>
+                </div>
 
-            {currentUserRole === "COACH" && (
-              <div className="mt-2 sm:mt-0 flex gap-2">
-                <button className="text-sm text-indigo-600 hover:underline">
-                  Edit
-                </button>
-                <button className="text-sm text-red-600 hover:underline">
-                  Delete
-                </button>
+                {currentUserRole === "COACH" && (
+                  <div className="mt-2 sm:mt-0 flex gap-2">
+                    {!isEditing ? (
+                      <>
+                        <button
+                          onClick={() => setEditingFixtureId(fixture.id)}
+                          className="text-sm text-indigo-600 hover:underline"
+                        >
+                          Edit
+                        </button>
+                        <button
+                          onClick={() => handleDelete(fixture.id)}
+                          disabled={isDeleting}
+                          className="text-sm text-red-600 hover:underline disabled:opacity-60"
+                        >
+                          {isDeleting ? "Deleting…" : "Delete"}
+                        </button>
+                      </>
+                    ) : (
+                      <button
+                        onClick={() => setEditingFixtureId(null)}
+                        className="text-sm text-gray-600 hover:underline"
+                      >
+                        Cancel
+                      </button>
+                    )}
+                  </div>
+                )}
               </div>
-            )}
-          </li>
-        ))}
+
+              {isEditing && currentUserRole === "COACH" && (
+                <EditFixtureForm
+                  fixtureId={fixture.id}
+                  initialOpponent={fixture.opponent}
+                  initialKickoffISO={fixture.kickoffAt}
+                  initialLocation={fixture.location ?? ""}
+                  initialNotes={fixture.notes ?? ""}
+                  onSaved={async () => {
+                    setEditingFixtureId(null);
+                    await refetch();
+                  }}
+                  onCancel={() => setEditingFixtureId(null)}
+                />
+              )}
+            </li>
+          );
+        })}
       </ul>
     </section>
   );

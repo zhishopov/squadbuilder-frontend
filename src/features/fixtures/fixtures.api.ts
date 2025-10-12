@@ -2,9 +2,9 @@ import { api } from "../../utils/api";
 
 export type Fixture = {
   id: number;
-  date: string;
   opponent: string;
   squadId: number;
+  kickoffAt: string;
   location?: string | null;
   notes?: string | null;
   status?: "UPCOMING" | "COMPLETED" | "CANCELLED";
@@ -19,8 +19,8 @@ export type CreateFixtureBody = {
 };
 
 export type UpdateFixtureBody = {
-  opponent: string;
-  date?: string;
+  opponent?: string;
+  kickoffAt?: string;
   location?: string | null;
   notes?: string | null;
   status?: "UPCOMING" | "COMPLETED" | "CANCELLED";
@@ -30,7 +30,7 @@ export const fixturesApi = api.injectEndpoints({
   endpoints: (build) => ({
     fixturesBySquad: build.query<Fixture[], number>({
       query: (squadId) => ({
-        url: `squads/${squadId}/fixtures`,
+        url: `/squads/${squadId}/fixtures`,
         method: "GET",
       }),
     }),
@@ -61,13 +61,14 @@ export const fixturesApi = api.injectEndpoints({
       }),
     }),
 
-    deleteFixture: build.mutation<{ ok: true }, number>({
+    deleteFixture: build.mutation<{ deleted: boolean; id: number }, number>({
       query: (fixtureId) => ({
         url: `/fixtures/${fixtureId}`,
         method: "DELETE",
       }),
     }),
   }),
+
   overrideExisting: false,
 });
 
