@@ -1,5 +1,7 @@
 import { api } from "../../utils/api";
 
+export type Availability = "YES" | "NO" | "MAYBE";
+
 export type Fixture = {
   id: number;
   opponent: string;
@@ -24,6 +26,20 @@ export type UpdateFixtureBody = {
   location?: string | null;
   notes?: string | null;
   status?: "UPCOMING" | "COMPLETED" | "CANCELLED";
+};
+
+export type SetAvailabilityBody = {
+  fixtureId: number;
+  availability: Availability;
+  userId?: number;
+};
+
+export type AvailabilityRecord = {
+  id: number;
+  fixtureId: number;
+  userId: number;
+  availability: Availability;
+  updatedAt: string;
 };
 
 export const fixturesApi = api.injectEndpoints({
@@ -100,6 +116,23 @@ export const fixturesApi = api.injectEndpoints({
         method: "DELETE",
       }),
     }),
+
+    setAvailability: build.mutation<AvailabilityRecord, SetAvailabilityBody>({
+      query: ({ fixtureId, availability, userId }) => ({
+        url: `/fixtures/${fixtureId}/availability`,
+        method: "POST",
+        body: { availability, userId },
+      }),
+      transformResponse: (
+        data: Record<string, unknown>
+      ): AvailabilityRecord => ({
+        id: Number(data.id),
+        fixtureId: Number(data.fixture_id ?? data.fixtureId),
+        userId: Number(data.user_id ?? data.userId),
+        availability: String(data.availability) as Availability,
+        updatedAt: String(data.updated_at ?? data.updatedAt ?? ""),
+      }),
+    }),
   }),
 
   overrideExisting: false,
@@ -111,4 +144,5 @@ export const {
   useCreateFixtureMutation,
   useUpdateFixtureMutation,
   useDeleteFixtureMutation,
+  useSetAvailabilityMutation,
 } = fixturesApi;
