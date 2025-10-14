@@ -9,44 +9,9 @@ import {
 import { useState } from "react";
 import { toast } from "sonner";
 
-type NormalizedFixture = {
-  id: number;
-  squadId: number;
-  opponent: string;
-  dateISO: string | null;
-  location?: string | null;
-  notes?: string | null;
-  availability?: Array<{
-    userId: number;
-    email: string;
-    role: "COACH" | "PLAYER";
-    availability: "YES" | "NO" | "MAYBE";
-    updatedAt: string | Date;
-  }>;
-};
-
-function normalizeFixture(fixtureResponse: unknown): NormalizedFixture | null {
-  if (!fixtureResponse || typeof fixtureResponse !== "object") return null;
-  const fixtureData = fixtureResponse as Record<string, unknown>;
-  const dateLike = fixtureData.kickoffAt ?? fixtureData.date ?? null;
-  const dateISO = dateLike ? new Date(dateLike as string).toISOString() : null;
-
-  return {
-    id: Number(fixtureData.id),
-    squadId: Number(fixtureData.squadId ?? fixtureData.squad_id),
-    opponent: String(fixtureData.opponent ?? ""),
-    dateISO,
-    location: (fixtureData.location ?? null) as string | null,
-    notes: (fixtureData.notes ?? null) as string | null,
-    availability: Array.isArray(fixtureData.availability)
-      ? (fixtureData.availability as NormalizedFixture["availability"])
-      : undefined,
-  };
-}
-
-function formatDateTime(iso: string | null) {
-  if (!iso) return "—";
-  const date = new Date(iso);
+function formatDateTime(isoString: string | null) {
+  if (!isoString) return "—";
+  const date = new Date(isoString);
   return Number.isNaN(date.getTime()) ? "—" : date.toLocaleString();
 }
 
@@ -57,14 +22,13 @@ export default function FixtureDetails() {
   const isBadId = !fixtureId || Number.isNaN(fixtureId);
 
   const {
-    data: rawFixture,
+    data: fixture,
     isLoading,
     isError,
     error,
     refetch,
   } = useFixtureByIdQuery(fixtureId, { skip: isBadId });
 
-  const fixture = normalizeFixture(rawFixture ?? null);
   const [setAvailability, { isLoading: isSaving }] =
     useSetAvailabilityMutation();
   const [playerChoice, setPlayerChoice] = useState<"YES" | "NO" | "MAYBE" | "">(
@@ -157,7 +121,7 @@ export default function FixtureDetails() {
               </p>
               <p className="text-sm">
                 <span className="font-medium">Kickoff:</span>{" "}
-                {formatDateTime(fixture.dateISO)}
+                {formatDateTime(fixture.kickoffAt)}
               </p>
               <p className="text-sm">
                 <span className="font-medium">Location:</span>{" "}
@@ -203,54 +167,53 @@ export default function FixtureDetails() {
               </section>
             )}
 
-            {currentUser?.role === "COACH" &&
-              Array.isArray(fixture.availability) && (
-                <section className="rounded-xl border bg-white p-4 shadow-sm">
-                  <h2 className="text-lg font-semibold mb-2">
-                    Players Availability
-                  </h2>
+            {currentUser?.role === "COACH" && (
+              <section className="rounded-xl border bg-white p-4 shadow-sm">
+                <h2 className="text-lg font-semibold mb-2">
+                  Players Availability
+                </h2>
 
-                  {fixture.availability.length === 0 ? (
-                    <p className="text-sm text-gray-700">No responses yet.</p>
-                  ) : (
-                    <ul className="divide-y divide-gray-100">
-                      {fixture.availability.map((player) => (
-                        <li
-                          key={`${player.userId}-${player.updatedAt}`}
-                          className="py-2 text-sm flex items-center justify-between"
-                        >
-                          <div>
-                            <p className="font-medium">{player.email}</p>
-                            <p className="text-gray-500 uppercase">
-                              {player.role}
-                            </p>
-                          </div>
-                          <div className="flex gap-2">
-                            {["YES", "NO", "MAYBE"].map((option) => (
-                              <button
-                                key={option}
-                                onClick={() =>
-                                  handleCoachSetAvailability(
-                                    player.userId,
-                                    option as "YES" | "NO" | "MAYBE"
-                                  )
-                                }
-                                className={`px-2 py-1 rounded text-xs ${
-                                  player.availability === option
-                                    ? "bg-emerald-600 text-white"
-                                    : "bg-gray-100 text-gray-700"
-                                }`}
-                              >
-                                {option}
-                              </button>
-                            ))}
-                          </div>
-                        </li>
-                      ))}
-                    </ul>
-                  )}
-                </section>
-              )}
+                {(fixture.availability ?? []).length === 0 ? (
+                  <p className="text-sm text-gray-700">No responses yet.</p>
+                ) : (
+                  <ul className="divide-y divide-gray-100">
+                    {(fixture.availability ?? []).map((player) => (
+                      <li
+                        key={`${player.userId}-${player.updatedAt}`}
+                        className="py-2 text-sm flex items-center justify-between"
+                      >
+                        <div>
+                          <p className="font-medium">{player.email}</p>
+                          <p className="text-gray-500 uppercase">
+                            {player.role}
+                          </p>
+                        </div>
+                        <div className="flex gap-2">
+                          {["YES", "NO", "MAYBE"].map((option) => (
+                            <button
+                              key={option}
+                              onClick={() =>
+                                handleCoachSetAvailability(
+                                  player.userId,
+                                  option as "YES" | "NO" | "MAYBE"
+                                )
+                              }
+                              className={`px-2 py-1 rounded text-xs ${
+                                player.availability === option
+                                  ? "bg-emerald-600 text-white"
+                                  : "bg-gray-100 text-gray-700"
+                              }`}
+                            >
+                              {option}
+                            </button>
+                          ))}
+                        </div>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </section>
+            )}
           </>
         )}
       </main>
