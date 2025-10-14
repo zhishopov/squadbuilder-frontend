@@ -1,6 +1,13 @@
 import Header from "../components/Header";
 import { Link, useParams } from "react-router-dom";
-import { useFixtureByIdQuery } from "../features/fixtures/fixtures.api";
+import { useSelector } from "react-redux";
+import type { RootState } from "../store";
+import {
+  useFixtureByIdQuery,
+  useSetAvailabilityMutation,
+} from "../features/fixtures/fixtures.api";
+import { useState } from "react";
+import { toast } from "sonner";
 
 type NormalizedFixture = {
   id: number;
@@ -44,6 +51,7 @@ function formatDateTime(iso: string | null) {
 }
 
 export default function FixtureDetails() {
+  const currentUser = useSelector((state: RootState) => state.auth.user);
   const params = useParams<{ id: string }>();
   const fixtureId = Number(params.id);
   const isBadId = !fixtureId || Number.isNaN(fixtureId);
@@ -53,9 +61,51 @@ export default function FixtureDetails() {
     isLoading,
     isError,
     error,
+    refetch,
   } = useFixtureByIdQuery(fixtureId, { skip: isBadId });
 
   const fixture = normalizeFixture(rawFixture ?? null);
+  const [setAvailability, { isLoading: isSaving }] =
+    useSetAvailabilityMutation();
+  const [playerChoice, setPlayerChoice] = useState<"YES" | "NO" | "MAYBE" | "">(
+    ""
+  );
+
+  async function handleSaveAvailability() {
+    if (!playerChoice || !fixture) return;
+
+    try {
+      await setAvailability({
+        fixtureId: fixture.id,
+        availability: playerChoice,
+      }).unwrap();
+
+      toast.success("Availability saved");
+      await refetch();
+    } catch {
+      toast.error("Failed to save availability");
+    }
+  }
+
+  async function handleCoachSetAvailability(
+    userId: number,
+    choice: "YES" | "NO" | "MAYBE"
+  ) {
+    if (!fixture) return;
+
+    try {
+      await setAvailability({
+        fixtureId: fixture.id,
+        availability: choice,
+        userId,
+      }).unwrap();
+
+      toast.success("Availability updated");
+      await refetch();
+    } catch {
+      toast.error("Failed to update availability");
+    }
+  }
 
   return (
     <>
@@ -85,7 +135,7 @@ export default function FixtureDetails() {
         {isError && !isBadId && (
           <section className="rounded-xl border bg-white p-4 shadow-sm">
             <p className="text-sm text-red-600">
-              Failed to load fixture (status{" "}
+              Failed to load fixture (status
               {(error as { status?: number })?.status ?? "?"})
             </p>
           </section>
@@ -119,36 +169,88 @@ export default function FixtureDetails() {
               </p>
             </section>
 
-            {Array.isArray(fixture.availability) && (
+            {currentUser?.role === "PLAYER" && (
               <section className="rounded-xl border bg-white p-4 shadow-sm">
-                <h2 className="text-lg font-semibold mb-2">Availability</h2>
-
-                {fixture.availability.length === 0 ? (
-                  <p className="text-sm text-gray-700">No responses yet.</p>
-                ) : (
-                  <ul className="divide-y divide-gray-100">
-                    {fixture.availability.map((playerAvailability) => (
-                      <li
-                        key={`${playerAvailability.userId}-${playerAvailability.updatedAt}`}
-                        className="py-2 text-sm flex items-center justify-between"
-                      >
-                        <div>
-                          <p className="font-medium">
-                            {playerAvailability.email}
-                          </p>
-                          <p className="text-gray-500 uppercase">
-                            {playerAvailability.role}
-                          </p>
-                        </div>
-                        <div className="text-xs text-gray-700">
-                          {playerAvailability.availability}
-                        </div>
-                      </li>
-                    ))}
-                  </ul>
-                )}
+                <h2 className="text-lg font-semibold mb-3">
+                  Your Availability
+                </h2>
+                <div className="flex items-center gap-4 mb-3">
+                  {["YES", "NO", "MAYBE"].map((option) => (
+                    <label
+                      key={option}
+                      className="flex items-center gap-1 text-sm"
+                    >
+                      <input
+                        type="radio"
+                        name="availability"
+                        value={option}
+                        checked={playerChoice === option}
+                        onChange={() =>
+                          setPlayerChoice(option as "YES" | "NO" | "MAYBE")
+                        }
+                      />
+                      {option}
+                    </label>
+                  ))}
+                </div>
+                <button
+                  onClick={handleSaveAvailability}
+                  disabled={!playerChoice || isSaving}
+                  className="rounded-md bg-emerald-600 px-3 py-2 text-white text-sm hover:bg-emerald-700 disabled:opacity-60"
+                >
+                  {isSaving ? "Saving…" : "Save"}
+                </button>
               </section>
             )}
+
+            {currentUser?.role === "COACH" &&
+              Array.isArray(fixture.availability) && (
+                <section className="rounded-xl border bg-white p-4 shadow-sm">
+                  <h2 className="text-lg font-semibold mb-2">
+                    Players Availability
+                  </h2>
+
+                  {fixture.availability.length === 0 ? (
+                    <p className="text-sm text-gray-700">No responses yet.</p>
+                  ) : (
+                    <ul className="divide-y divide-gray-100">
+                      {fixture.availability.map((player) => (
+                        <li
+                          key={`${player.userId}-${player.updatedAt}`}
+                          className="py-2 text-sm flex items-center justify-between"
+                        >
+                          <div>
+                            <p className="font-medium">{player.email}</p>
+                            <p className="text-gray-500 uppercase">
+                              {player.role}
+                            </p>
+                          </div>
+                          <div className="flex gap-2">
+                            {["YES", "NO", "MAYBE"].map((option) => (
+                              <button
+                                key={option}
+                                onClick={() =>
+                                  handleCoachSetAvailability(
+                                    player.userId,
+                                    option as "YES" | "NO" | "MAYBE"
+                                  )
+                                }
+                                className={`px-2 py-1 rounded text-xs ${
+                                  player.availability === option
+                                    ? "bg-emerald-600 text-white"
+                                    : "bg-gray-100 text-gray-700"
+                                }`}
+                              >
+                                {option}
+                              </button>
+                            ))}
+                          </div>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </section>
+              )}
           </>
         )}
       </main>
