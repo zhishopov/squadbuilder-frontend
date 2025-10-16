@@ -6,7 +6,7 @@ import {
   useFixtureByIdQuery,
   useSetAvailabilityMutation,
 } from "../features/fixtures/fixtures.api";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { toast } from "sonner";
 
 function formatDateTime(isoString: string | null) {
@@ -31,9 +31,24 @@ export default function FixtureDetails() {
 
   const [setAvailability, { isLoading: isSaving }] =
     useSetAvailabilityMutation();
+
+  const myExistingChoice = useMemo(() => {
+    if (!fixture || !Array.isArray(fixture.availability) || !currentUser?.id) {
+      return "";
+    }
+    const mine = fixture.availability.find(
+      (row) => row.userId === currentUser.id
+    );
+    return (mine?.availability as "YES" | "NO" | "MAYBE" | undefined) ?? "";
+  }, [fixture, currentUser?.id]);
+
   const [playerChoice, setPlayerChoice] = useState<"YES" | "NO" | "MAYBE" | "">(
-    ""
+    myExistingChoice
   );
+
+  if (playerChoice === "" && myExistingChoice !== "") {
+    setPlayerChoice(myExistingChoice);
+  }
 
   async function handleSaveAvailability() {
     if (!playerChoice || !fixture) return;
@@ -99,7 +114,7 @@ export default function FixtureDetails() {
         {isError && !isBadId && (
           <section className="rounded-xl border bg-white p-4 shadow-sm">
             <p className="text-sm text-red-600">
-              Failed to load fixture (status
+              Failed to load fixture (status{" "}
               {(error as { status?: number })?.status ?? "?"})
             </p>
           </section>
@@ -149,8 +164,10 @@ export default function FixtureDetails() {
                         name="availability"
                         value={option}
                         checked={playerChoice === option}
-                        onChange={() =>
-                          setPlayerChoice(option as "YES" | "NO" | "MAYBE")
+                        onChange={(e) =>
+                          setPlayerChoice(
+                            e.currentTarget.value as "YES" | "NO" | "MAYBE"
+                          )
                         }
                       />
                       {option}

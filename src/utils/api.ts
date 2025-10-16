@@ -8,9 +8,7 @@ export const api = createApi({
     baseUrl,
     credentials: "include",
     prepareHeaders: (headers) => {
-      if (!headers.has("Content-Type")) {
-        headers.set("Content-Type", "application/json");
-      }
+      headers.set("Accept", "application/json");
       return headers;
     },
   }),
