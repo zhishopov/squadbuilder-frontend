@@ -6,7 +6,7 @@ import {
   useFixtureByIdQuery,
   useSetAvailabilityMutation,
 } from "../features/fixtures/fixtures.api";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 
 function formatDateTime(isoString: string | null) {
@@ -46,23 +46,58 @@ export default function FixtureDetails() {
     myExistingChoice
   );
 
-  if (playerChoice === "" && myExistingChoice !== "") {
-    setPlayerChoice(myExistingChoice);
-  }
+  useEffect(() => {
+    if (playerChoice === "" && myExistingChoice !== "") {
+      setPlayerChoice(myExistingChoice);
+    }
+  }, [myExistingChoice, playerChoice]);
+
+  const envBaseUrl = import.meta.env.VITE_API_URL as string | undefined;
+  const fallbackBaseUrl =
+    window.location.hostname === "localhost"
+      ? "http://127.0.0.1:4000"
+      : window.location.origin;
+  const apiBase = envBaseUrl ?? fallbackBaseUrl;
+
+  const [isSubmittingAvailability, setIsSubmittingAvailability] =
+    useState(false);
 
   async function handleSaveAvailability() {
     if (!playerChoice || !fixture) return;
 
+    setIsSubmittingAvailability(true);
     try {
-      await setAvailability({
-        fixtureId: fixture.id,
-        availability: playerChoice,
-      }).unwrap();
+      const response = await fetch(
+        `${apiBase}/fixtures/${fixture.id}/availability`,
+        {
+          method: "POST",
+          credentials: "include",
+          headers: {
+            "Content-Type": "application/json",
+            Accept: "application/json",
+          },
+          body: JSON.stringify({
+            availability: String(playerChoice).toUpperCase(),
+          }),
+        }
+      );
+
+      if (!response.ok) {
+        const errorJson = await response
+          .json()
+          .catch(() => ({ error: `HTTP ${response.status}` }));
+        throw new Error(errorJson?.error || `HTTP ${response.status}`);
+      }
 
       toast.success("Availability saved");
       await refetch();
-    } catch {
-      toast.error("Failed to save availability");
+    } catch (err) {
+      console.error("Availability error", err);
+      const readable =
+        (err as { message?: string })?.message || "Failed to save availability";
+      toast.error(readable);
+    } finally {
+      setIsSubmittingAvailability(false);
     }
   }
 
@@ -71,18 +106,43 @@ export default function FixtureDetails() {
     choice: "YES" | "NO" | "MAYBE"
   ) {
     if (!fixture) return;
+    const numericUserId = Number(userId);
 
+    setIsSubmittingAvailability(true);
     try {
-      await setAvailability({
-        fixtureId: fixture.id,
-        availability: choice,
-        userId,
-      }).unwrap();
+      const response = await fetch(
+        `${apiBase}/fixtures/${fixture.id}/availability`,
+        {
+          method: "POST",
+          credentials: "include",
+          headers: {
+            "Content-Type": "application/json",
+            Accept: "application/json",
+          },
+          body: JSON.stringify({
+            availability: String(choice).toUpperCase(),
+            userId: numericUserId,
+          }),
+        }
+      );
+
+      if (!response.ok) {
+        const errorJson = await response
+          .json()
+          .catch(() => ({ error: `HTTP ${response.status}` }));
+        throw new Error(errorJson?.error || `HTTP ${response.status}`);
+      }
 
       toast.success("Availability updated");
       await refetch();
-    } catch {
-      toast.error("Failed to update availability");
+    } catch (err) {
+      console.error("Coach availability error", err);
+      const readable =
+        (err as { message?: string })?.message ||
+        "Failed to update availability";
+      toast.error(readable);
+    } finally {
+      setIsSubmittingAvailability(false);
     }
   }
 
@@ -176,10 +236,12 @@ export default function FixtureDetails() {
                 </div>
                 <button
                   onClick={handleSaveAvailability}
-                  disabled={!playerChoice || isSaving}
+                  disabled={
+                    !playerChoice || isSaving || isSubmittingAvailability
+                  }
                   className="rounded-md bg-emerald-600 px-3 py-2 text-white text-sm hover:bg-emerald-700 disabled:opacity-60"
                 >
-                  {isSaving ? "Saving…" : "Save"}
+                  {isSaving || isSubmittingAvailability ? "Saving…" : "Save"}
                 </button>
               </section>
             )}
@@ -209,6 +271,7 @@ export default function FixtureDetails() {
                           {["YES", "NO", "MAYBE"].map((option) => (
                             <button
                               key={option}
+                              disabled={isSaving || isSubmittingAvailability}
                               onClick={() =>
                                 handleCoachSetAvailability(
                                   player.userId,
