@@ -206,14 +206,15 @@ export const fixturesApi = api.injectEndpoints({
       query: ({ fixtureId, availability, userId }) => {
         const normalized = String(availability ?? "")
           .trim()
-          .toUpperCase();
+          .toUpperCase() as Availability;
+
         const allowed: Availability[] = ["YES", "NO", "MAYBE"];
-        if (!allowed.includes(normalized as Availability)) {
+        if (!allowed.includes(normalized)) {
           throw new Error("Availability must be YES, NO, or MAYBE");
         }
 
         const body: { availability: Availability; userId?: number } = {
-          availability: normalized as Availability,
+          availability: normalized,
         };
         if (typeof userId === "number" && Number.isFinite(userId)) {
           body.userId = Number(userId);
