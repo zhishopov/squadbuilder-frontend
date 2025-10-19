@@ -1,61 +1,150 @@
 import Header from "../components/Header";
 import { Link, useParams } from "react-router-dom";
-import { useFixtureByIdQuery } from "../features/fixtures/fixtures.api";
+import { useSelector } from "react-redux";
+import type { RootState } from "../store";
+import {
+  useFixtureByIdQuery,
+  useSetAvailabilityMutation,
+} from "../features/fixtures/fixtures.api";
+import { useEffect, useMemo, useState } from "react";
+import { toast } from "sonner";
 
-type NormalizedFixture = {
-  id: number;
-  squadId: number;
-  opponent: string;
-  dateISO: string | null;
-  location?: string | null;
-  notes?: string | null;
-  availability?: Array<{
-    userId: number;
-    email: string;
-    role: "COACH" | "PLAYER";
-    availability: "YES" | "NO" | "MAYBE";
-    updatedAt: string | Date;
-  }>;
-};
-
-function normalizeFixture(fixtureResponse: unknown): NormalizedFixture | null {
-  if (!fixtureResponse || typeof fixtureResponse !== "object") return null;
-  const fixtureData = fixtureResponse as Record<string, unknown>;
-  const dateLike = fixtureData.kickoffAt ?? fixtureData.date ?? null;
-  const dateISO = dateLike ? new Date(dateLike as string).toISOString() : null;
-
-  return {
-    id: Number(fixtureData.id),
-    squadId: Number(fixtureData.squadId ?? fixtureData.squad_id),
-    opponent: String(fixtureData.opponent ?? ""),
-    dateISO,
-    location: (fixtureData.location ?? null) as string | null,
-    notes: (fixtureData.notes ?? null) as string | null,
-    availability: Array.isArray(fixtureData.availability)
-      ? (fixtureData.availability as NormalizedFixture["availability"])
-      : undefined,
-  };
-}
-
-function formatDateTime(iso: string | null) {
-  if (!iso) return "—";
-  const date = new Date(iso);
+function formatDateTime(isoString: string | null) {
+  if (!isoString) return "—";
+  const date = new Date(isoString);
   return Number.isNaN(date.getTime()) ? "—" : date.toLocaleString();
 }
 
 export default function FixtureDetails() {
+  const currentUser = useSelector((state: RootState) => state.auth.user);
   const params = useParams<{ id: string }>();
   const fixtureId = Number(params.id);
   const isBadId = !fixtureId || Number.isNaN(fixtureId);
 
   const {
-    data: rawFixture,
+    data: fixture,
     isLoading,
     isError,
     error,
+    refetch,
   } = useFixtureByIdQuery(fixtureId, { skip: isBadId });
 
-  const fixture = normalizeFixture(rawFixture ?? null);
+  const [setAvailability, { isLoading: isSaving }] =
+    useSetAvailabilityMutation();
+
+  const myExistingChoice = useMemo(() => {
+    if (!fixture || !Array.isArray(fixture.availability) || !currentUser?.id) {
+      return "";
+    }
+    const mine = fixture.availability.find(
+      (row) => row.userId === currentUser.id
+    );
+    return (mine?.availability as "YES" | "NO" | "MAYBE" | undefined) ?? "";
+  }, [fixture, currentUser?.id]);
+
+  const [playerChoice, setPlayerChoice] = useState<"YES" | "NO" | "MAYBE" | "">(
+    myExistingChoice
+  );
+
+  useEffect(() => {
+    if (playerChoice === "" && myExistingChoice !== "") {
+      setPlayerChoice(myExistingChoice);
+    }
+  }, [myExistingChoice, playerChoice]);
+
+  const envBaseUrl = import.meta.env.VITE_API_URL as string | undefined;
+  const fallbackBaseUrl =
+    window.location.hostname === "localhost"
+      ? "http://127.0.0.1:4000"
+      : window.location.origin;
+  const apiBase = envBaseUrl ?? fallbackBaseUrl;
+
+  const [isSubmittingAvailability, setIsSubmittingAvailability] =
+    useState(false);
+
+  async function handleSaveAvailability() {
+    if (!playerChoice || !fixture) return;
+
+    setIsSubmittingAvailability(true);
+    try {
+      const response = await fetch(
+        `${apiBase}/fixtures/${fixture.id}/availability`,
+        {
+          method: "POST",
+          credentials: "include",
+          headers: {
+            "Content-Type": "application/json",
+            Accept: "application/json",
+          },
+          body: JSON.stringify({
+            availability: String(playerChoice).toUpperCase(),
+          }),
+        }
+      );
+
+      if (!response.ok) {
+        const errorJson = await response
+          .json()
+          .catch(() => ({ error: `HTTP ${response.status}` }));
+        throw new Error(errorJson?.error || `HTTP ${response.status}`);
+      }
+
+      toast.success("Availability saved");
+      await refetch();
+    } catch (err) {
+      console.error("Availability error", err);
+      const readable =
+        (err as { message?: string })?.message || "Failed to save availability";
+      toast.error(readable);
+    } finally {
+      setIsSubmittingAvailability(false);
+    }
+  }
+
+  async function handleCoachSetAvailability(
+    userId: number,
+    choice: "YES" | "NO" | "MAYBE"
+  ) {
+    if (!fixture) return;
+    const numericUserId = Number(userId);
+
+    setIsSubmittingAvailability(true);
+    try {
+      const response = await fetch(
+        `${apiBase}/fixtures/${fixture.id}/availability`,
+        {
+          method: "POST",
+          credentials: "include",
+          headers: {
+            "Content-Type": "application/json",
+            Accept: "application/json",
+          },
+          body: JSON.stringify({
+            availability: String(choice).toUpperCase(),
+            userId: numericUserId,
+          }),
+        }
+      );
+
+      if (!response.ok) {
+        const errorJson = await response
+          .json()
+          .catch(() => ({ error: `HTTP ${response.status}` }));
+        throw new Error(errorJson?.error || `HTTP ${response.status}`);
+      }
+
+      toast.success("Availability updated");
+      await refetch();
+    } catch (err) {
+      console.error("Coach availability error", err);
+      const readable =
+        (err as { message?: string })?.message ||
+        "Failed to update availability";
+      toast.error(readable);
+    } finally {
+      setIsSubmittingAvailability(false);
+    }
+  }
 
   return (
     <>
@@ -107,7 +196,7 @@ export default function FixtureDetails() {
               </p>
               <p className="text-sm">
                 <span className="font-medium">Kickoff:</span>{" "}
-                {formatDateTime(fixture.dateISO)}
+                {formatDateTime(fixture.kickoffAt)}
               </p>
               <p className="text-sm">
                 <span className="font-medium">Location:</span>{" "}
@@ -119,29 +208,85 @@ export default function FixtureDetails() {
               </p>
             </section>
 
-            {Array.isArray(fixture.availability) && (
+            {currentUser?.role === "PLAYER" && (
               <section className="rounded-xl border bg-white p-4 shadow-sm">
-                <h2 className="text-lg font-semibold mb-2">Availability</h2>
+                <h2 className="text-lg font-semibold mb-3">
+                  Your Availability
+                </h2>
+                <div className="flex items-center gap-4 mb-3">
+                  {["YES", "NO", "MAYBE"].map((option) => (
+                    <label
+                      key={option}
+                      className="flex items-center gap-1 text-sm"
+                    >
+                      <input
+                        type="radio"
+                        name="availability"
+                        value={option}
+                        checked={playerChoice === option}
+                        onChange={(e) =>
+                          setPlayerChoice(
+                            e.currentTarget.value as "YES" | "NO" | "MAYBE"
+                          )
+                        }
+                      />
+                      {option}
+                    </label>
+                  ))}
+                </div>
+                <button
+                  onClick={handleSaveAvailability}
+                  disabled={
+                    !playerChoice || isSaving || isSubmittingAvailability
+                  }
+                  className="rounded-md bg-emerald-600 px-3 py-2 text-white text-sm hover:bg-emerald-700 disabled:opacity-60"
+                >
+                  {isSaving || isSubmittingAvailability ? "Saving…" : "Save"}
+                </button>
+              </section>
+            )}
 
-                {fixture.availability.length === 0 ? (
+            {currentUser?.role === "COACH" && (
+              <section className="rounded-xl border bg-white p-4 shadow-sm">
+                <h2 className="text-lg font-semibold mb-2">
+                  Players Availability
+                </h2>
+
+                {(fixture.availability ?? []).length === 0 ? (
                   <p className="text-sm text-gray-700">No responses yet.</p>
                 ) : (
                   <ul className="divide-y divide-gray-100">
-                    {fixture.availability.map((playerAvailability) => (
+                    {(fixture.availability ?? []).map((player) => (
                       <li
-                        key={`${playerAvailability.userId}-${playerAvailability.updatedAt}`}
+                        key={`${player.userId}-${player.updatedAt}`}
                         className="py-2 text-sm flex items-center justify-between"
                       >
                         <div>
-                          <p className="font-medium">
-                            {playerAvailability.email}
-                          </p>
+                          <p className="font-medium">{player.email}</p>
                           <p className="text-gray-500 uppercase">
-                            {playerAvailability.role}
+                            {player.role}
                           </p>
                         </div>
-                        <div className="text-xs text-gray-700">
-                          {playerAvailability.availability}
+                        <div className="flex gap-2">
+                          {["YES", "NO", "MAYBE"].map((option) => (
+                            <button
+                              key={option}
+                              disabled={isSaving || isSubmittingAvailability}
+                              onClick={() =>
+                                handleCoachSetAvailability(
+                                  player.userId,
+                                  option as "YES" | "NO" | "MAYBE"
+                                )
+                              }
+                              className={`px-2 py-1 rounded text-xs ${
+                                player.availability === option
+                                  ? "bg-emerald-600 text-white"
+                                  : "bg-gray-100 text-gray-700"
+                              }`}
+                            >
+                              {option}
+                            </button>
+                          ))}
                         </div>
                       </li>
                     ))}
