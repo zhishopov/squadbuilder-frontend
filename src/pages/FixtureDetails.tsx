@@ -8,6 +8,7 @@ import {
 } from "../features/fixtures/fixtures.api";
 import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
+import { useGetLineupQuery } from "../features/lineups/lineups.api";
 
 function formatDateTime(isoString: string | null) {
   if (!isoString) return "—";
@@ -61,6 +62,10 @@ export default function FixtureDetails() {
 
   const [isSubmittingAvailability, setIsSubmittingAvailability] =
     useState(false);
+
+  const { data: lineup } = useGetLineupQuery(fixture?.id ?? 0, {
+    skip: !fixture?.id,
+  });
 
   async function handleSaveAvailability() {
     if (!playerChoice || !fixture) return;
@@ -206,6 +211,17 @@ export default function FixtureDetails() {
                 <span className="font-medium">Notes:</span>{" "}
                 {fixture.notes ?? "—"}
               </p>
+
+              {currentUser?.role === "COACH" && (
+                <div className="mt-4">
+                  <Link
+                    to={`/lineup/${fixture.id}`}
+                    className="rounded-md bg-indigo-600 px-3 py-2 text-white text-sm hover:bg-indigo-700"
+                  >
+                    Manage Lineup
+                  </Link>
+                </div>
+              )}
             </section>
 
             {currentUser?.role === "PLAYER" && (
@@ -243,6 +259,50 @@ export default function FixtureDetails() {
                 >
                   {isSaving || isSubmittingAvailability ? "Saving…" : "Save"}
                 </button>
+              </section>
+            )}
+
+            {(lineup?.status === "PUBLISHED" ||
+              currentUser?.role === "COACH") && (
+              <section className="rounded-xl border bg-white p-4 shadow-sm">
+                <h2 className="text-lg font-semibold mb-2">
+                  {lineup?.status === "PUBLISHED"
+                    ? "Published Lineup"
+                    : "Current Lineup"}
+                </h2>
+
+                {!lineup || (lineup.players ?? []).length === 0 ? (
+                  <p className="text-sm text-gray-700">No lineup yet.</p>
+                ) : (
+                  <ul className="divide-y divide-gray-100">
+                    {lineup.players.map((playerRow) => {
+                      const emailLabel =
+                        fixture.availability?.find(
+                          (row) => row.userId === playerRow.userId
+                        )?.email ?? "Unknown";
+
+                      return (
+                        <li
+                          key={`${playerRow.userId}-${playerRow.orderNumber}`}
+                          className="py-2 text-sm flex items-center justify-between"
+                        >
+                          <div>
+                            <p className="font-medium">{emailLabel}</p>
+                          </div>
+                          <div className="text-gray-700">
+                            {playerRow.isStarter ? "Starter" : "Bench"}
+                            {playerRow.position
+                              ? ` (${playerRow.position})`
+                              : ""}
+                            {typeof playerRow.orderNumber === "number"
+                              ? ` • #${playerRow.orderNumber}`
+                              : ""}
+                          </div>
+                        </li>
+                      );
+                    })}
+                  </ul>
+                )}
               </section>
             )}
 
