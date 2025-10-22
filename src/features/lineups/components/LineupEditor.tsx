@@ -8,6 +8,7 @@ import {
   type LineupPlayerRow,
   type LineupStatus,
 } from "../lineups.api";
+import { useGetSquadMembersQuery } from "../../squads/squads.api";
 import { toast } from "sonner";
 import { Link } from "react-router-dom";
 
@@ -57,30 +58,41 @@ export default function LineupEditor({ fixtureId }: LineupEditorProps) {
     refetch: refetchLineup,
   } = useGetLineupQuery(fixtureId);
 
+  const squadId = Number(fixture?.squadId ?? 0);
+  const {
+    data: squadMembers,
+    isLoading: isMembersLoading,
+    isError: isMembersError,
+  } = useGetSquadMembersQuery(squadId, { skip: !squadId });
+
   const [saveLineup, { isLoading: isSaving }] = useSaveLineupMutation();
   const [setLineupStatus, { isLoading: isToggling }] =
     useSetLineupStatusMutation();
 
   const initialRows = useMemo<EditableRow[]>(() => {
-    const fixturePlayers =
-      fixture?.availability?.filter((player) => player.role === "PLAYER") ?? [];
+    const basePlayers =
+      squadMembers?.filter((member) => member.role === "PLAYER") ??
+      fixture?.availability?.filter((player) => player.role === "PLAYER") ??
+      [];
+
     const existingPlayers = lineup?.players ?? [];
-    const existingMap = new Map<number, LineupPlayerRow>();
-    for (const player of existingPlayers) {
-      existingMap.set(player.userId, player);
+    const existingByUserId = new Map<number, LineupPlayerRow>();
+    for (const existingPlayer of existingPlayers) {
+      existingByUserId.set(existingPlayer.userId, existingPlayer);
     }
-    return fixturePlayers.map((fixturePlayer) => {
-      const existing = existingMap.get(fixturePlayer.userId);
+
+    return basePlayers.map((basePlayer) => {
+      const existing = existingByUserId.get(basePlayer.userId);
       return {
-        userId: fixturePlayer.userId,
-        email: fixturePlayer.email,
+        userId: basePlayer.userId,
+        email: "email" in basePlayer ? String(basePlayer.email) : "",
         isStarter: existing?.isStarter ?? false,
         position: existing?.position ?? null,
         orderNumber:
           typeof existing?.orderNumber === "number" ? existing.orderNumber : 0,
       };
     });
-  }, [fixture?.availability, lineup?.players]);
+  }, [squadMembers, fixture?.availability, lineup?.players]);
 
   const [rows, setRows] = useState<EditableRow[]>([]);
   const [status, setStatus] = useState<LineupStatus>("DRAFT");
@@ -102,12 +114,58 @@ export default function LineupEditor({ fixtureId }: LineupEditorProps) {
     [rows]
   );
 
+  const currentUserIds = useMemo(
+    () => new Set(rows.map((row) => row.userId)),
+    [rows]
+  );
+
+  const addableMembers = useMemo(() => {
+    const sourceMembers =
+      squadMembers?.filter((member) => member.role === "PLAYER") ?? [];
+    return sourceMembers.filter((member) => !currentUserIds.has(member.userId));
+  }, [squadMembers, currentUserIds]);
+
+  const [selectedNewUserId, setSelectedNewUserId] = useState<number | "">("");
+
+  function getNextOrderNumber(): number {
+    const usedOrderNumbers = new Set(
+      rows.map((row) => row.orderNumber).filter((order) => order > 0)
+    );
+    for (let candidate = 1; candidate <= 18; candidate++) {
+      if (!usedOrderNumbers.has(candidate)) return candidate;
+    }
+    return 0;
+  }
+
+  function handleAddSelectedPlayer() {
+    if (selectedNewUserId === "") return;
+    const member = addableMembers.find(
+      (candidate) => candidate.userId === selectedNewUserId
+    );
+    if (!member) return;
+
+    const nextOrder = getNextOrderNumber();
+    const newRow: EditableRow = {
+      userId: member.userId,
+      email: member.email,
+      isStarter: false,
+      position: null,
+      orderNumber: nextOrder,
+    };
+    setRows((previousRows) => [...previousRows, newRow]);
+    setSelectedNewUserId("");
+  }
+
+  function handleRemovePlayer(userId: number) {
+    setRows((previousRows) =>
+      previousRows.filter((row) => row.userId !== userId)
+    );
+  }
+
   function handleToggleStarter(userId: number) {
     setRows((previousRows) =>
-      previousRows.map((editableRow) =>
-        editableRow.userId === userId
-          ? { ...editableRow, isStarter: !editableRow.isStarter }
-          : editableRow
+      previousRows.map((row) =>
+        row.userId === userId ? { ...row, isStarter: !row.isStarter } : row
       )
     );
   }
@@ -115,52 +173,75 @@ export default function LineupEditor({ fixtureId }: LineupEditorProps) {
   function handlePositionChange(userId: number, newValue: string) {
     const normalizedPosition = newValue === "" ? null : newValue;
     setRows((previousRows) =>
-      previousRows.map((editableRow) =>
-        editableRow.userId === userId
-          ? { ...editableRow, position: normalizedPosition }
-          : editableRow
+      previousRows.map((row) =>
+        row.userId === userId ? { ...row, position: normalizedPosition } : row
       )
     );
   }
 
   function handleOrderChange(userId: number, newValue: string) {
     const parsed = Number(newValue);
-    const safeValue = Number.isFinite(parsed) && parsed >= 0 ? parsed : 0;
+    const safeValue =
+      Number.isFinite(parsed) && parsed >= 0 && parsed <= 18 ? parsed : 0;
     setRows((previousRows) =>
-      previousRows.map((editableRow) =>
-        editableRow.userId === userId
-          ? { ...editableRow, orderNumber: safeValue }
-          : editableRow
+      previousRows.map((row) =>
+        row.userId === userId ? { ...row, orderNumber: safeValue } : row
       )
     );
+  }
+
+  function validateBeforeSave(selectedRows: EditableRow[]): string | null {
+    if (selectedRows.length > 18) {
+      return "You can include at most 18 players";
+    }
+    const starters = selectedRows.filter((row) => row.isStarter).length;
+    if (starters > 11) {
+      return "You can select at most 11 starters";
+    }
+    const seenUserIds = new Set<number>();
+    for (const row of selectedRows) {
+      if (seenUserIds.has(row.userId)) {
+        return "Duplicate player in lineup";
+      }
+      seenUserIds.add(row.userId);
+    }
+    const nonZeroOrders = selectedRows
+      .map((row) => row.orderNumber)
+      .filter((order) => order > 0);
+    const uniqueOrders = new Set(nonZeroOrders);
+    if (uniqueOrders.size !== nonZeroOrders.length) {
+      return "Duplicate order numbers";
+    }
+    for (const order of nonZeroOrders) {
+      if (order < 1 || order > 18) {
+        return "Order must be between 1 and 18";
+      }
+    }
+    return null;
   }
 
   async function handleSaveDraft() {
     const selectedRows = rows
       .filter(
-        (editableRow) =>
-          editableRow.isStarter ||
-          (typeof editableRow.position === "string" &&
-            editableRow.position.length > 0) ||
-          editableRow.orderNumber > 0
+        (row) =>
+          row.isStarter ||
+          (typeof row.position === "string" && row.position.length > 0) ||
+          row.orderNumber > 0
       )
       .slice(0, 18);
 
-    if (
-      selectedRows.filter((editableRow) => editableRow.isStarter).length > 11
-    ) {
-      toast.error("You can select at most 11 starters");
+    const validationError = validateBeforeSave(selectedRows);
+    if (validationError) {
+      toast.error(validationError);
       return;
     }
 
-    const payloadPlayers: LineupPlayerRow[] = selectedRows.map(
-      (editableRow) => ({
-        userId: editableRow.userId,
-        isStarter: editableRow.isStarter,
-        position: editableRow.position,
-        orderNumber: editableRow.orderNumber,
-      })
-    );
+    const payloadPlayers: LineupPlayerRow[] = selectedRows.map((row) => ({
+      userId: row.userId,
+      isStarter: row.isStarter,
+      position: row.position,
+      orderNumber: row.orderNumber,
+    }));
 
     try {
       await saveLineup({ fixtureId, players: payloadPlayers }).unwrap();
@@ -178,17 +259,14 @@ export default function LineupEditor({ fixtureId }: LineupEditorProps) {
 
     if (nextStatus === "PUBLISHED") {
       const currentSelected = rows.filter(
-        (editableRow) =>
-          editableRow.isStarter ||
-          (typeof editableRow.position === "string" &&
-            editableRow.position.length > 0) ||
-          editableRow.orderNumber > 0
+        (row) =>
+          row.isStarter ||
+          (typeof row.position === "string" && row.position.length > 0) ||
+          row.orderNumber > 0
       );
-      if (
-        currentSelected.filter((editableRow) => editableRow.isStarter).length >
-        11
-      ) {
-        toast.error("You can select at most 11 starters");
+      const validationError = validateBeforeSave(currentSelected);
+      if (validationError) {
+        toast.error(validationError);
         return;
       }
     }
@@ -209,7 +287,7 @@ export default function LineupEditor({ fixtureId }: LineupEditorProps) {
     }
   }
 
-  if (isFixtureLoading || isLineupLoading) {
+  if (isFixtureLoading || isLineupLoading || (squadId && isMembersLoading)) {
     return <div className="text-sm text-gray-600">Loading lineup…</div>;
   }
 
@@ -223,11 +301,20 @@ export default function LineupEditor({ fixtureId }: LineupEditorProps) {
   }
 
   if (isLineupError) {
+    const httpStatus = (lineupError as { status?: number })?.status;
+    if (httpStatus && httpStatus !== 404) {
+      return (
+        <div className="text-sm text-red-600">
+          Failed to load lineup ({httpStatus})
+        </div>
+      );
+    }
+    // 404 means no lineup yet — continue to render the editor to start a draft.
+  }
+
+  if (isMembersError && squadId) {
     return (
-      <div className="text-sm text-red-600">
-        Failed to load lineup (
-        {(lineupError as { status?: number })?.status ?? "?"})
-      </div>
+      <div className="text-sm text-red-600">Failed to load squad members</div>
     );
   }
 
@@ -272,84 +359,123 @@ export default function LineupEditor({ fixtureId }: LineupEditorProps) {
         </div>
       </div>
 
-      <div className="rounded-lg border divide-y">
-        <div className="grid grid-cols-5 gap-2 p-3 text-xs font-semibold text-gray-600">
-          <div>Player</div>
-          <div>Starter</div>
-          <div>Position</div>
-          <div>Order</div>
-          <div></div>
+      <div className="rounded-lg border p-3 space-y-3">
+        <div className="flex gap-2 items-center">
+          <select
+            value={selectedNewUserId === "" ? "" : String(selectedNewUserId)}
+            onChange={(event) => {
+              const value = event.currentTarget.value;
+              setSelectedNewUserId(value === "" ? "" : Number(value));
+            }}
+            className="border rounded px-2 py-1 text-sm min-w-[220px]"
+          >
+            <option value="">Add player…</option>
+            {addableMembers.map((member) => (
+              <option key={member.userId} value={member.userId}>
+                {member.email}
+              </option>
+            ))}
+          </select>
+          <button
+            onClick={handleAddSelectedPlayer}
+            disabled={selectedNewUserId === "" || rows.length >= 18}
+            className="rounded-md bg-gray-800 px-3 py-1.5 text-white text-sm disabled:opacity-60"
+          >
+            Add
+          </button>
+          <Link
+            to={`/fixtures/${fixtureId}`}
+            className="ml-auto text-emerald-700 underline text-xs"
+          >
+            View Fixture
+          </Link>
         </div>
 
-        {(rows ?? []).map((editableRow) => (
-          <div
-            key={editableRow.userId}
-            className="grid grid-cols-5 gap-2 p-3 items-center"
-          >
-            <div className="text-sm">
-              <div className="font-medium">{editableRow.email}</div>
-            </div>
-
-            <div>
-              <label className="inline-flex items-center gap-2 text-sm">
-                <input
-                  type="checkbox"
-                  checked={editableRow.isStarter}
-                  onChange={() => handleToggleStarter(editableRow.userId)}
-                />
-                <span>Starter</span>
-              </label>
-            </div>
-
-            <div>
-              <select
-                value={editableRow.position ?? ""}
-                onChange={(event) =>
-                  handlePositionChange(
-                    editableRow.userId,
-                    event.currentTarget.value
-                  )
-                }
-                className="border rounded px-2 py-1 text-sm w-full"
-              >
-                <option value="">—</option>
-                {POSITIONS.map((positionOption) => (
-                  <option key={positionOption} value={positionOption}>
-                    {positionOption}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            <div>
-              <input
-                type="number"
-                min={0}
-                value={editableRow.orderNumber}
-                onChange={(event) =>
-                  handleOrderChange(
-                    editableRow.userId,
-                    event.currentTarget.value
-                  )
-                }
-                className="border rounded px-2 py-1 text-sm w-20"
-              />
-            </div>
-
-            <div className="text-right">
-              <Link
-                to={`/fixtures/${fixtureId}`}
-                className="text-emerald-700 underline text-xs"
-              >
-                View Fixture
-              </Link>
-            </div>
+        <div className="rounded-lg border divide-y">
+          <div className="grid grid-cols-6 gap-2 p-3 text-xs font-semibold text-gray-600">
+            <div>Player</div>
+            <div>Starter</div>
+            <div>Position</div>
+            <div>Order</div>
+            <div></div>
+            <div></div>
           </div>
-        ))}
-      </div>
 
-      <div className="text-xs text-gray-500">
-        Starters: {startersCount} / 11
+          {(rows ?? []).map((editableRow) => (
+            <div
+              key={editableRow.userId}
+              className="grid grid-cols-6 gap-2 p-3 items-center"
+            >
+              <div className="text-sm">
+                <div className="font-medium">{editableRow.email}</div>
+              </div>
+
+              <div>
+                <label className="inline-flex items-center gap-2 text-sm">
+                  <input
+                    type="checkbox"
+                    checked={editableRow.isStarter}
+                    onChange={() => handleToggleStarter(editableRow.userId)}
+                  />
+                  <span>Starter</span>
+                </label>
+              </div>
+
+              <div>
+                <select
+                  value={editableRow.position ?? ""}
+                  onChange={(event) =>
+                    handlePositionChange(
+                      editableRow.userId,
+                      event.currentTarget.value
+                    )
+                  }
+                  className="border rounded px-2 py-1 text-sm w-full"
+                >
+                  <option value="">—</option>
+                  {POSITIONS.map((positionOption) => (
+                    <option key={positionOption} value={positionOption}>
+                      {positionOption}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <input
+                  type="number"
+                  min={0}
+                  max={18}
+                  value={editableRow.orderNumber}
+                  onChange={(event) =>
+                    handleOrderChange(
+                      editableRow.userId,
+                      event.currentTarget.value
+                    )
+                  }
+                  className="border rounded px-2 py-1 text-sm w-20"
+                />
+              </div>
+
+              <div className="text-xs text-gray-500">
+                {editableRow.orderNumber > 0 ? "In order" : "—"}
+              </div>
+
+              <div className="text-right">
+                <button
+                  onClick={() => handleRemovePlayer(editableRow.userId)}
+                  className="text-red-600 text-xs underline"
+                >
+                  Remove
+                </button>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        <div className="text-xs text-gray-500">
+          Starters: {startersCount} / 11
+        </div>
       </div>
     </div>
   );
