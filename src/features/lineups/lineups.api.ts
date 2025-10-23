@@ -13,11 +13,13 @@ export type Lineup = {
   fixtureId: number;
   status: LineupStatus;
   players: LineupPlayerRow[];
+  formation?: string | null;
 };
 
 export type SaveLineupBody = {
   fixtureId: number;
   players: LineupPlayerRow[];
+  formation?: string | null;
 };
 
 export type SetLineupStatusBody = {
@@ -25,55 +27,44 @@ export type SetLineupStatusBody = {
   status: LineupStatus;
 };
 
-function parsePlayers(rawPlayersInput: unknown): LineupPlayerRow[] {
-  if (!Array.isArray(rawPlayersInput)) return [];
-  return rawPlayersInput.map((rowRaw) => {
-    const row = rowRaw as Record<string, unknown>;
+type BackendPlayer = {
+  userId: number;
+  email?: string;
+  position: string;
+  order: number;
+  starter: boolean;
+};
 
-    const userIdValue =
-      (row.userId as unknown) ?? (row.user_id as unknown) ?? 0;
+type BackendGetOrSaveResponse = {
+  fixtureId: number;
+  lineupId: number | null;
+  status: string | null;
+  formation: string | null;
+  players: BackendPlayer[];
+};
 
-    const isStarterValue =
-      (row.isStarter as unknown) ?? (row.is_starter as unknown) ?? false;
-
-    const positionValue =
-      (row.position as unknown) === null || typeof row.position === "string"
-        ? (row.position as string | null)
-        : String(row.position);
-
-    const orderNumberValue =
-      (row.orderNumber as unknown) ?? (row.order_number as unknown) ?? 0;
-
-    return {
-      userId: Number(userIdValue),
-      isStarter: Boolean(isStarterValue),
-      position:
-        typeof positionValue === "string" || positionValue === null
-          ? positionValue
-          : String(positionValue),
-      orderNumber: Number(orderNumberValue),
-    };
-  });
-}
-
-function parseLineup(dataRaw: unknown): Lineup {
-  const data = dataRaw as Record<string, unknown>;
-
-  const players = parsePlayers(data.players);
-
-  const fixtureIdValue =
-    (data.fixtureId as unknown) ?? (data.fixture_id as unknown) ?? 0;
-
-  const statusString = String(
-    (data.status as unknown) ?? "DRAFT"
-  ).toUpperCase();
+function toFrontendLineup(data: BackendGetOrSaveResponse): Lineup {
+  const statusRaw = String(data.status ?? "DRAFT").toUpperCase();
   const status: LineupStatus =
-    statusString === "PUBLISHED" ? "PUBLISHED" : "DRAFT";
+    statusRaw === "PUBLISHED" ? "PUBLISHED" : "DRAFT";
+
+  const players: LineupPlayerRow[] = Array.isArray(data.players)
+    ? data.players.map((p) => ({
+        userId: Number(p.userId),
+        isStarter: Boolean(p.starter),
+        position:
+          typeof p.position === "string" && p.position.length > 0
+            ? p.position
+            : null,
+        orderNumber: Number(p.order),
+      }))
+    : [];
 
   return {
-    fixtureId: Number(fixtureIdValue),
+    fixtureId: Number(data.fixtureId),
     status,
     players,
+    formation: data.formation ?? null,
   };
 }
 
@@ -84,23 +75,31 @@ export const lineupsApi = api.injectEndpoints({
         url: `/fixtures/${fixtureId}/lineup`,
         method: "GET",
       }),
-      transformResponse: (dataRaw: unknown): Lineup => parseLineup(dataRaw),
+      transformResponse: (data: BackendGetOrSaveResponse): Lineup =>
+        toFrontendLineup(data),
     }),
 
     saveLineup: build.mutation<Lineup, SaveLineupBody>({
-      query: (body) => ({
-        url: `/fixtures/${body.fixtureId}/lineup`,
+      query: ({ fixtureId, players, formation }) => ({
+        url: `/fixtures/${fixtureId}/lineup`,
         method: "POST",
         body: {
-          players: (body.players ?? []).map((playerRow) => ({
-            userId: Number(playerRow.userId),
-            isStarter: Boolean(playerRow.isStarter),
-            position: playerRow.position ?? null,
-            orderNumber: Number(playerRow.orderNumber),
+          ...(typeof formation === "string" && formation.trim().length > 0
+            ? { formation: formation.trim() }
+            : {}),
+          players: (players ?? []).map((player) => ({
+            userId: Number(player.userId),
+            position:
+              typeof player.position === "string" && player.position.length > 0
+                ? player.position
+                : "UNASSIGNED",
+            order: Number(player.orderNumber),
+            starter: Boolean(player.isStarter),
           })),
         },
       }),
-      transformResponse: (dataRaw: unknown): Lineup => parseLineup(dataRaw),
+      transformResponse: (data: BackendGetOrSaveResponse): Lineup =>
+        toFrontendLineup(data),
     }),
 
     setLineupStatus: build.mutation<Lineup, SetLineupStatusBody>({
@@ -109,7 +108,8 @@ export const lineupsApi = api.injectEndpoints({
         method: "PATCH",
         body: { status },
       }),
-      transformResponse: (dataRaw: unknown): Lineup => parseLineup(dataRaw),
+      transformResponse: (data: BackendGetOrSaveResponse): Lineup =>
+        toFrontendLineup(data),
     }),
   }),
   overrideExisting: false,

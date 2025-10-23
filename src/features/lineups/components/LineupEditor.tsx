@@ -27,19 +27,20 @@ type EditableRow = {
 
 const POSITIONS = [
   "GK",
-  "LB",
-  "CB",
   "RB",
-  "LM",
-  "CM",
-  "RM",
-  "LW",
-  "RW",
-  "CAM",
+  "CB",
+  "LB",
+  "RWB",
+  "LWB",
   "CDM",
+  "CM",
+  "CAM",
+  "RW",
+  "LW",
   "ST",
-  "SUB",
-];
+  "CF",
+  "UNASSIGNED",
+] as const;
 
 export default function LineupEditor({ fixtureId }: LineupEditorProps) {
   const {
@@ -131,7 +132,7 @@ export default function LineupEditor({ fixtureId }: LineupEditorProps) {
     const usedOrderNumbers = new Set(
       rows.map((row) => row.orderNumber).filter((order) => order > 0)
     );
-    for (let candidate = 1; candidate <= 18; candidate++) {
+    for (let candidate = 1; candidate <= 20; candidate++) {
       if (!usedOrderNumbers.has(candidate)) return candidate;
     }
     return 0;
@@ -182,7 +183,7 @@ export default function LineupEditor({ fixtureId }: LineupEditorProps) {
   function handleOrderChange(userId: number, newValue: string) {
     const parsed = Number(newValue);
     const safeValue =
-      Number.isFinite(parsed) && parsed >= 0 && parsed <= 18 ? parsed : 0;
+      Number.isFinite(parsed) && parsed >= 0 && parsed <= 20 ? parsed : 0;
     setRows((previousRows) =>
       previousRows.map((row) =>
         row.userId === userId ? { ...row, orderNumber: safeValue } : row
@@ -191,8 +192,8 @@ export default function LineupEditor({ fixtureId }: LineupEditorProps) {
   }
 
   function validateBeforeSave(selectedRows: EditableRow[]): string | null {
-    if (selectedRows.length > 18) {
-      return "You can include at most 18 players";
+    if (selectedRows.length > 20) {
+      return "You can include at most 20 players";
     }
     const starters = selectedRows.filter((row) => row.isStarter).length;
     if (starters > 11) {
@@ -213,8 +214,8 @@ export default function LineupEditor({ fixtureId }: LineupEditorProps) {
       return "Duplicate order numbers";
     }
     for (const order of nonZeroOrders) {
-      if (order < 1 || order > 18) {
-        return "Order must be between 1 and 18";
+      if (order < 1 || order > 20) {
+        return "Order must be between 1 and 20";
       }
     }
     return null;
@@ -228,7 +229,7 @@ export default function LineupEditor({ fixtureId }: LineupEditorProps) {
           (typeof row.position === "string" && row.position.length > 0) ||
           row.orderNumber > 0
       )
-      .slice(0, 18);
+      .slice(0, 20);
 
     const validationError = validateBeforeSave(selectedRows);
     if (validationError) {
@@ -247,9 +248,13 @@ export default function LineupEditor({ fixtureId }: LineupEditorProps) {
       await saveLineup({ fixtureId, players: payloadPlayers }).unwrap();
       toast.success("Lineup saved");
       await Promise.all([refetchLineup(), refetchFixture()]);
-    } catch (saveError) {
-      toast.error("Failed to save lineup");
-      console.error(saveError);
+    } catch (error) {
+      const message =
+        (error as { data?: { error?: string } })?.data?.error ??
+        (error as { error?: string })?.error ??
+        "Failed to save lineup";
+      toast.error(message);
+      console.error("saveLineup error", error);
     }
   }
 
@@ -281,9 +286,13 @@ export default function LineupEditor({ fixtureId }: LineupEditorProps) {
         nextStatus === "PUBLISHED" ? "Lineup published" : "Lineup set to draft"
       );
       await Promise.all([refetchLineup(), refetchFixture()]);
-    } catch (toggleError) {
-      toast.error("Failed to update lineup status");
-      console.error(toggleError);
+    } catch (error) {
+      const message =
+        (error as { data?: { error?: string } })?.data?.error ??
+        (error as { error?: string })?.error ??
+        "Failed to update lineup status";
+      toast.error(message);
+      console.error("setLineupStatus error", error);
     }
   }
 
@@ -309,7 +318,6 @@ export default function LineupEditor({ fixtureId }: LineupEditorProps) {
         </div>
       );
     }
-    // 404 means no lineup yet — continue to render the editor to start a draft.
   }
 
   if (isMembersError && squadId) {
@@ -378,7 +386,7 @@ export default function LineupEditor({ fixtureId }: LineupEditorProps) {
           </select>
           <button
             onClick={handleAddSelectedPlayer}
-            disabled={selectedNewUserId === "" || rows.length >= 18}
+            disabled={selectedNewUserId === "" || rows.length >= 20}
             className="rounded-md bg-gray-800 px-3 py-1.5 text-white text-sm disabled:opacity-60"
           >
             Add
@@ -445,7 +453,7 @@ export default function LineupEditor({ fixtureId }: LineupEditorProps) {
                 <input
                   type="number"
                   min={0}
-                  max={18}
+                  max={20}
                   value={editableRow.orderNumber}
                   onChange={(event) =>
                     handleOrderChange(
