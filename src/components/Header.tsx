@@ -41,7 +41,7 @@ export default function Header() {
             Fixtures
           </Link>
           <Link to="/settings" className="text-sm hover:underline">
-            Settings
+            Profile
           </Link>
 
           <button
