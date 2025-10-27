@@ -10,6 +10,8 @@ import { useFixturesBySquadQuery } from "../features/fixtures/fixtures.api";
 import MembersList from "../features/squads/components/MembersList";
 import FixturesList from "../features/fixtures/components/FixturesList";
 import CreateFixtureForm from "../features/fixtures/components/CreateFixtureForm";
+import { useEffect } from "react";
+import { showErrorToast } from "../utils/error";
 
 export default function Squad() {
   const currentUser = useSelector((state: RootState) => state.auth.user);
@@ -35,6 +37,18 @@ export default function Squad() {
     skip: !squadId,
   });
 
+  useEffect(() => {
+    if (isSquadError) {
+      showErrorToast(squadError);
+    }
+  }, [isSquadError, squadError]);
+
+  useEffect(() => {
+    if (isMembersError) {
+      showErrorToast(membersError);
+    }
+  }, [isMembersError, membersError]);
+
   return (
     <>
       <Header />
@@ -49,20 +63,17 @@ export default function Squad() {
 
         {isSquadError && (
           <section className="rounded-xl border bg-white p-4 shadow-sm">
-            <p className="text-sm text-red-600">
-              Failed to load squad (status{" "}
-              {(squadError as { status?: number })?.status ?? "?"})
-            </p>
+            <p className="text-sm text-red-600">Failed to load squad.</p>
           </section>
         )}
 
         {!isSquadLoading && !mySquad && userRole === "COACH" && (
           <section className="rounded-xl border bg-white p-4 shadow-sm">
             <p className="text-sm text-gray-700">
-              You don't have a squad yet. Go to your
+              You don't have a squad yet. Go to your{" "}
               <Link to="/dashboard" className="text-emerald-700 underline">
                 Dashboard
-              </Link>
+              </Link>{" "}
               to create one.
             </p>
           </section>
@@ -83,10 +94,7 @@ export default function Squad() {
               {isMembersLoading ? (
                 <p className="text-sm text-gray-600">Loading members…</p>
               ) : isMembersError ? (
-                <p className="text-sm text-red-600">
-                  Failed to load members (status
-                  {(membersError as { status?: number })?.status ?? "?"})
-                </p>
+                <p className="text-sm text-red-600">Failed to load members.</p>
               ) : (
                 <p className="text-sm text-gray-700">
                   Members: {members?.length ?? "—"}
@@ -96,12 +104,12 @@ export default function Squad() {
 
             <MembersList squadId={mySquad.id} />
 
-            <FixturesList squadId={mySquad.id}></FixturesList>
+            <FixturesList squadId={mySquad.id} />
 
             <CreateFixtureForm
               squadId={mySquad.id}
               onCreated={() => refetchFixtures()}
-            ></CreateFixtureForm>
+            />
           </>
         )}
       </main>
