@@ -2,6 +2,7 @@ import { useNavigate } from "react-router-dom";
 import { useLoginMutation } from "../auth.api";
 import { useState } from "react";
 import { toast } from "sonner";
+import { getErrorMessage, showErrorToast } from "../../../utils/error";
 
 type Props = {
   onSuccess?: () => void;
@@ -25,13 +26,9 @@ export default function LoginForm({ onSuccess }: Props) {
       if (onSuccess) onSuccess();
       else navigate("/dashboard", { replace: true });
     } catch (error) {
-      const status = (error as { status?: number })?.status;
-      if (status === 400 || status === 401) {
-        setFormError("Invalid email or password.");
-      } else {
-        setFormError("Something went wrong. Please try again.");
-      }
-      toast.error(formError ?? "Login failed");
+      const message = getErrorMessage(error);
+      setFormError(message);
+      showErrorToast(error);
       console.error("Login error:", error);
     }
   }
