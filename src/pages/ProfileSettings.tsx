@@ -4,6 +4,7 @@ import { useLogoutMutation } from "../features/auth/auth.api";
 import { clearUser } from "../features/auth/auth.slice";
 import type { RootState } from "../store";
 import { api } from "../utils/api";
+import { showErrorToast, getErrorMessage } from "../utils/error";
 import Header from "../components/Header";
 
 export default function ProfileSettings() {
@@ -15,12 +16,14 @@ export default function ProfileSettings() {
   async function handleLogout() {
     try {
       await logout().unwrap();
+      dispatch(clearUser());
+      dispatch(api.util.resetApiState());
+      navigate("/");
     } catch (error) {
-      console.log(error);
+      const message = getErrorMessage(error);
+      showErrorToast(error);
+      console.error("Logout error:", message);
     }
-    dispatch(clearUser());
-    dispatch(api.util.resetApiState());
-    navigate("/");
   }
 
   return (
