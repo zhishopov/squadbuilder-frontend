@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useSelector } from "react-redux";
 import type { RootState } from "../../../store";
 import {
@@ -6,6 +6,7 @@ import {
   useLookupUserByEmailMutation,
   useAddMemberToSquadMutation,
 } from "../squads.api";
+import { showErrorToast, getErrorMessage } from "../../../utils/error";
 
 type MembersListProps = {
   squadId: number;
@@ -50,6 +51,12 @@ export default function MembersList({ squadId }: MembersListProps) {
     useState<string>("UNASSIGNED");
   const [feedbackMessage, setFeedbackMessage] = useState<string | null>(null);
 
+  useEffect(() => {
+    if (hasMembersError) {
+      showErrorToast(membersError);
+    }
+  }, [hasMembersError, membersError]);
+
   async function handleAddMember(event: React.FormEvent) {
     event.preventDefault();
     setFeedbackMessage(null);
@@ -76,13 +83,15 @@ export default function MembersList({ squadId }: MembersListProps) {
       setPreferredPositionInput("UNASSIGNED");
       refetchMembers();
     } catch (error) {
-      const status = (error as { status?: number })?.status;
-      if (status === 409) {
+      const statusCode = (error as { status?: number })?.status;
+      if (statusCode === 409) {
         setFeedbackMessage("That user is already a member of the squad.");
-      } else if (status === 404) {
+      } else if (statusCode === 404) {
         setFeedbackMessage("No user found with that email.");
+      } else if (statusCode === 400 || statusCode === 422) {
+        setFeedbackMessage(getErrorMessage(error));
       } else {
-        setFeedbackMessage("Could not add member. Please try again.");
+        showErrorToast(error);
       }
     }
   }
@@ -101,7 +110,7 @@ export default function MembersList({ squadId }: MembersListProps) {
             placeholder="player@email.com"
             className="rounded-md border border-gray-300 px-3 py-2 text-sm"
             value={memberEmailInput}
-            onChange={(e) => setMemberEmailInput(e.target.value)}
+            onChange={(event) => setMemberEmailInput(event.target.value)}
             required
             autoComplete="email"
           />
@@ -109,7 +118,7 @@ export default function MembersList({ squadId }: MembersListProps) {
           <select
             className="rounded-md border border-gray-300 px-3 py-2 text-sm"
             value={preferredPositionInput}
-            onChange={(e) => setPreferredPositionInput(e.target.value)}
+            onChange={(event) => setPreferredPositionInput(event.target.value)}
           >
             {POSITION_OPTIONS.map((position) => (
               <option key={position} value={position}>
@@ -137,10 +146,7 @@ export default function MembersList({ squadId }: MembersListProps) {
       {isMembersLoading ? (
         <p className="text-sm text-gray-600">Loading members…</p>
       ) : hasMembersError ? (
-        <p className="text-sm text-red-600">
-          Failed to load members (status
-          {(membersError as { status?: number })?.status ?? "?"})
-        </p>
+        <p className="text-sm text-red-600">Failed to load members.</p>
       ) : !squadMembers || squadMembers.length === 0 ? (
         <p className="text-sm text-gray-700">No members yet.</p>
       ) : (
