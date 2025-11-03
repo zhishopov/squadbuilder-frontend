@@ -3,6 +3,7 @@ import { useSelector } from "react-redux";
 import type { RootState } from "../../../store";
 import { useCreateFixtureMutation } from "../fixtures.api";
 import { toast } from "sonner";
+import { getErrorMessage, showErrorToast } from "../../../utils/error";
 
 type CreateFixtureFormProps = {
   squadId: number;
@@ -57,8 +58,9 @@ export default function CreateFixtureForm({
       setNotes("");
       onCreated?.();
     } catch (error) {
-      toast.error("Failed to create fixture");
-      setErrorMessage("Failed to create fixture. Please try again.");
+      const message = getErrorMessage(error);
+      setErrorMessage(message);
+      showErrorToast(error);
       console.log(error);
     }
   }
