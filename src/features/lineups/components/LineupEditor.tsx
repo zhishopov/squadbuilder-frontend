@@ -11,6 +11,11 @@ import {
 import { useGetSquadMembersQuery } from "../../squads/squads.api";
 import { toast } from "sonner";
 import { Link } from "react-router-dom";
+import {
+  getErrorMessage,
+  getErrorStatus,
+  showErrorToast,
+} from "../../../utils/error";
 
 type LineupEditorProps = {
   fixtureId: number;
@@ -249,11 +254,7 @@ export default function LineupEditor({ fixtureId }: LineupEditorProps) {
       toast.success("Lineup saved");
       await Promise.all([refetchLineup(), refetchFixture()]);
     } catch (error) {
-      const message =
-        (error as { data?: { error?: string } })?.data?.error ??
-        (error as { error?: string })?.error ??
-        "Failed to save lineup";
-      toast.error(message);
+      showErrorToast(error);
       console.error("saveLineup error", error);
     }
   }
@@ -287,11 +288,7 @@ export default function LineupEditor({ fixtureId }: LineupEditorProps) {
       );
       await Promise.all([refetchLineup(), refetchFixture()]);
     } catch (error) {
-      const message =
-        (error as { data?: { error?: string } })?.data?.error ??
-        (error as { error?: string })?.error ??
-        "Failed to update lineup status";
-      toast.error(message);
+      showErrorToast(error);
       console.error("setLineupStatus error", error);
     }
   }
@@ -301,20 +298,23 @@ export default function LineupEditor({ fixtureId }: LineupEditorProps) {
   }
 
   if (isFixtureError) {
+    const statusCode = getErrorStatus(fixtureError);
+    const readable = getErrorMessage(fixtureError);
     return (
       <div className="text-sm text-red-600">
-        Failed to load fixture (
-        {(fixtureError as { status?: number })?.status ?? "?"})
+        Failed to load fixture{statusCode ? ` (${statusCode})` : ""}: {readable}
       </div>
     );
   }
 
   if (isLineupError) {
-    const httpStatus = (lineupError as { status?: number })?.status;
-    if (httpStatus && httpStatus !== 404) {
+    const statusCode = getErrorStatus(lineupError);
+    if (statusCode && statusCode !== 404) {
+      const readable = getErrorMessage(lineupError);
       return (
         <div className="text-sm text-red-600">
-          Failed to load lineup ({httpStatus})
+          Failed to load lineup{statusCode ? ` (${statusCode})` : ""}:{" "}
+          {readable}
         </div>
       );
     }

@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useCreateSquadMutation } from "../squads.api";
 import { useMySquadQuery } from "../../dashboard/dashboard.api";
 import { toast } from "sonner";
+import { getErrorMessage } from "../../../utils/error";
 
 export default function CreateSquadCard() {
   const [squadName, setSquadName] = useState("");
@@ -24,9 +25,9 @@ export default function CreateSquadCard() {
       setSquadName("");
       refetch();
     } catch (error) {
+      const friendly = getErrorMessage(error);
+      setErrorMessage(friendly);
       console.error("Create squad error:", error);
-      setErrorMessage("Failed to create squad. Please try again.");
-      toast.error("Failed to create squad");
     }
   }
 

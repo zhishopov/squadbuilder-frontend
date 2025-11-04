@@ -6,15 +6,18 @@ import {
   useFixturesForSquadQuery,
   useLineupByFixtureQuery,
 } from "../dashboard.api";
+import { getErrorMessage } from "../../../utils/error";
 
 export default function NextFixtureCard() {
-  const me = useSelector((s: RootState) => s.auth.user);
-  const { data: squad, isLoading: squadLoading } = useMySquadQuery();
+  const currentUser = useSelector((state: RootState) => state.auth.user);
+  const { data: squad, isLoading: isSquadLoading } = useMySquadQuery();
 
   const {
     data: fixtures,
-    isLoading: fixturesLoading,
-    isError: fixturesError,
+    isLoading: isFixturesLoading,
+    isError: hasFixturesError,
+    error: fixturesError,
+    refetch: refetchFixtures,
   } = useFixturesForSquadQuery(squad?.id ?? 0, {
     skip: !squad?.id,
   });
@@ -27,14 +30,17 @@ export default function NextFixtureCard() {
           new Date(a.kickoffAt).getTime() - new Date(b.kickoffAt).getTime()
       )[0] ?? null;
 
-  const { data: lineup, isLoading: lineupLoading } = useLineupByFixtureQuery(
-    nextFixture?.id ?? 0,
-    {
-      skip: !nextFixture?.id,
-    }
-  );
+  const {
+    data: lineup,
+    isLoading: isLineupLoading,
+    isError: hasLineupError,
+    error: lineupError,
+    refetch: refetchLineup,
+  } = useLineupByFixtureQuery(nextFixture?.id ?? 0, {
+    skip: !nextFixture?.id,
+  });
 
-  if (squadLoading || fixturesLoading) {
+  if (isSquadLoading || isFixturesLoading) {
     return (
       <section className="mb-6 rounded-xl border bg-white p-4 shadow-sm">
         <h2 className="text-lg font-semibold mb-2">Next Fixture</h2>
@@ -43,11 +49,18 @@ export default function NextFixtureCard() {
     );
   }
 
-  if (fixturesError) {
+  if (hasFixturesError) {
+    const friendly = getErrorMessage(fixturesError);
     return (
-      <section className="mb-6 rounded-xl border bg-white p-4 shadow-sm">
+      <section className="mb-6 rounded-xl border bg-white p-4 shadow-sm space-y-2">
         <h2 className="text-lg font-semibold mb-2">Next Fixture</h2>
-        <p className="text-sm text-red-600">Failed to load fixtures.</p>
+        <p className="text-sm text-red-600">{friendly}</p>
+        <button
+          onClick={() => refetchFixtures()}
+          className="rounded-md bg-gray-800 px-3 py-1.5 text-white text-sm hover:bg-gray-700"
+        >
+          Try again
+        </button>
       </section>
     );
   }
@@ -64,8 +77,8 @@ export default function NextFixtureCard() {
   const isPublished = !!lineup?.published;
   const isSelected =
     !!lineup?.selectedPlayerIds &&
-    !!me?.id &&
-    lineup.selectedPlayerIds.includes(me.id);
+    !!currentUser?.id &&
+    lineup.selectedPlayerIds.includes(currentUser.id);
 
   return (
     <section className="mb-6 rounded-xl border bg-white p-4 shadow-sm">
@@ -82,8 +95,20 @@ export default function NextFixtureCard() {
         )}
       </div>
 
-      {lineupLoading ? (
+      {isLineupLoading ? (
         <p className="mt-2 text-xs text-gray-500">Checking lineup…</p>
+      ) : hasLineupError ? (
+        <div className="mt-2 space-y-2">
+          <p className="text-xs text-red-600">
+            {getErrorMessage(lineupError)}
+          </p>
+          <button
+            onClick={() => refetchLineup()}
+            className="rounded-md bg-gray-800 px-2 py-1 text-white text-xs hover:bg-gray-700"
+          >
+            Try again
+          </button>
+        </div>
       ) : isPublished ? (
         <div
           className={`mt-3 rounded-md px-3 py-2 text-xs font-medium ${

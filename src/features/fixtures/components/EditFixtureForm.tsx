@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useSelector } from "react-redux";
 import type { RootState } from "../../../store";
 import { useUpdateFixtureMutation } from "../fixtures.api";
+import { getErrorMessage, showErrorToast } from "../../../utils/error";
 
 type EditFixtureFormProps = {
   fixtureId: number;
@@ -106,12 +107,10 @@ export default function EditFixtureForm({
     try {
       await updateFixture({ fixtureId, body: payload }).unwrap();
       onSaved?.();
-    } catch (err) {
-      const status = (err as { status?: number })?.status;
-      if (status === 400) setErrorMessage("Please check your inputs.");
-      else if (status === 403)
-        setErrorMessage("Only coaches can edit fixtures.");
-      else setErrorMessage("Failed to save fixture. Please try again.");
+    } catch (error) {
+      const message = getErrorMessage(error);
+      setErrorMessage(message);
+      showErrorToast(error);
     }
   }
 

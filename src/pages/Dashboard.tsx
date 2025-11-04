@@ -8,6 +8,7 @@ import FixturesCard from "../features/dashboard/components/FixturesCard";
 import NextFixtureCard from "../features/dashboard/components/NextFixtureCard";
 import AvailabilityCard from "../features/dashboard/components/AvailabilityCard";
 import CreateSquadCard from "../features/squads/components/CreateSquadCard";
+import { getErrorMessage } from "../utils/error";
 
 export default function Dashboard() {
   const currentUser = useSelector((state: RootState) => state.auth.user);
@@ -17,6 +18,8 @@ export default function Dashboard() {
     data: currentSquad,
     isLoading: isSquadLoading,
     isError: isSquadError,
+    error: squadError,
+    refetch,
   } = useMySquadQuery();
 
   if (isSquadLoading) {
@@ -25,19 +28,26 @@ export default function Dashboard() {
         <Header />
         <main className="mx-auto max-w-5xl px-4 py-6">
           <h1 className="text-2xl font-bold mb-4">Dashboard</h1>
-          <p>Loading...</p>
+          <p className="text-sm text-gray-600">Loading…</p>
         </main>
       </>
     );
   }
 
   if (isSquadError) {
+    const friendly = getErrorMessage(squadError);
     return (
       <>
         <Header />
-        <main className="mx-auto max-w-5xl px-4 py-6">
-          <h1 className="text-2xl font-bold mb-4">Dashboard</h1>
-          <p className="text-red-600">Failed to load squad.</p>
+        <main className="mx-auto max-w-5xl px-4 py-6 space-y-3">
+          <h1 className="text-2xl font-bold">Dashboard</h1>
+          <p className="text-sm text-red-600">{friendly}</p>
+          <button
+            onClick={() => refetch()}
+            className="inline-flex rounded-md bg-gray-800 px-3 py-2 text-white text-sm"
+          >
+            Try again
+          </button>
         </main>
       </>
     );
@@ -45,20 +55,20 @@ export default function Dashboard() {
 
   return (
     <>
-      <Header></Header>
+      <Header />
       <main className="mx-auto max-w-5xl px-4 py-6">
         <h1 className="text-2xl font-bold mb-4">Dashboard</h1>
 
         {currentSquad ? (
           <>
-            <SquadCard></SquadCard>
-            <MembersCard></MembersCard>
-            <FixturesCard></FixturesCard>
-            <NextFixtureCard></NextFixtureCard>
-            <AvailabilityCard></AvailabilityCard>
+            <SquadCard />
+            <MembersCard />
+            <FixturesCard />
+            <NextFixtureCard />
+            <AvailabilityCard />
           </>
         ) : currentUserRole === "COACH" ? (
-          <CreateSquadCard></CreateSquadCard>
+          <CreateSquadCard />
         ) : (
           <section className="rounded-xl border bg-white p-4 shadow-sm">
             <h2 className="text-lg font-semibold mb-2">Your Squad</h2>

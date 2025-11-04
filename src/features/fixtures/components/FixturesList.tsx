@@ -7,6 +7,7 @@ import {
   useDeleteFixtureMutation,
 } from "../fixtures.api";
 import EditFixtureForm from "./EditFixtureForm";
+import { getErrorStatus, getErrorMessage, showErrorToast } from "../../../utils/error";
 
 type FixturesListProps = {
   squadId: number;
@@ -36,8 +37,8 @@ export default function FixturesList({ squadId }: FixturesListProps) {
     try {
       await deleteFixture(fixtureId).unwrap();
       await refetch();
-    } catch {
-      alert("Failed to delete fixture. Please try again.");
+    } catch (err) {
+      showErrorToast(err);
     }
   }
 
@@ -51,12 +52,14 @@ export default function FixturesList({ squadId }: FixturesListProps) {
   }
 
   if (isError) {
+    const statusCode = getErrorStatus(error);
+    const errorText = getErrorMessage(error);
     return (
       <section className="rounded-xl border bg-white p-4 shadow-sm">
         <h2 className="text-lg font-semibold mb-3">Fixtures</h2>
         <p className="text-sm text-red-600">
-          Failed to load fixtures (status
-          {(error as { status?: number })?.status ?? "?"})
+          {errorText}
+          {typeof statusCode === "number" ? ` (status ${statusCode})` : ""}
         </p>
       </section>
     );

@@ -1,11 +1,13 @@
 import { useMySquadQuery, useSquadMembersQuery } from "../dashboard.api";
+import { getErrorMessage } from "../../../utils/error";
 
 export default function SquadCard() {
   const {
     data: currentSquad,
     isLoading: isSquadLoading,
-    isError: isSquadError,
+    isError: hasSquadError,
     error: squadError,
+    refetch: refetchSquad,
   } = useMySquadQuery();
 
   const squadId = currentSquad?.id ?? 0;
@@ -13,7 +15,9 @@ export default function SquadCard() {
   const {
     data: squadMembers,
     isLoading: isMembersLoading,
-    isError: isMembersError,
+    isError: hasMembersError,
+    error: membersError,
+    refetch: refetchMembers,
   } = useSquadMembersQuery(squadId, { skip: !squadId });
 
   if (isSquadLoading || isMembersLoading) {
@@ -25,14 +29,18 @@ export default function SquadCard() {
     );
   }
 
-  if (isSquadError) {
+  if (hasSquadError) {
+    const friendly = getErrorMessage(squadError);
     return (
-      <section className="mb-6 rounded-xl border bg-white p-4 shadow-sm">
+      <section className="mb-6 rounded-xl border bg-white p-4 shadow-sm space-y-2">
         <h2 className="text-lg font-semibold mb-2">Your Squad</h2>
-        <p className="text-sm text-red-600">
-          Failed to load squad (status
-          {(squadError as { status?: number })?.status ?? "?"})
-        </p>
+        <p className="text-sm text-red-600">{friendly}</p>
+        <button
+          onClick={() => refetchSquad()}
+          className="rounded-md bg-gray-800 px-3 py-1.5 text-white text-sm hover:bg-gray-700"
+        >
+          Try again
+        </button>
       </section>
     );
   }
@@ -41,16 +49,23 @@ export default function SquadCard() {
     return (
       <section className="mb-6 rounded-xl border bg-white p-4 shadow-sm">
         <h2 className="text-lg font-semibold mb-2">Your Squad</h2>
-        <p className="text-sm text-gray-700">You don't have a squad yet.</p>
+        <p className="text-sm text-gray-700">You don’t have a squad yet.</p>
       </section>
     );
   }
 
-  if (isMembersError) {
+  if (hasMembersError) {
+    const friendly = getErrorMessage(membersError);
     return (
-      <section className="mb-6 rounded-xl border bg-white p-4 shadow-sm">
+      <section className="mb-6 rounded-xl border bg-white p-4 shadow-sm space-y-2">
         <h2 className="text-lg font-semibold mb-2">Your Squad</h2>
-        <p className="text-sm text-red-600">Failed to load members.</p>
+        <p className="text-sm text-red-600">{friendly}</p>
+        <button
+          onClick={() => refetchMembers()}
+          className="rounded-md bg-gray-800 px-3 py-1.5 text-white text-sm hover:bg-gray-700"
+        >
+          Try again
+        </button>
       </section>
     );
   }

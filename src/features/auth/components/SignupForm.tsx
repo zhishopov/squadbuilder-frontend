@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useSignupMutation } from "../auth.api";
 import { toast } from "sonner";
+import { getErrorMessage, showErrorToast } from "../../../utils/error";
 
 type Props = {
   onSuccess?: () => void;
@@ -23,11 +24,9 @@ export default function SignupForm({ onSuccess }: Props) {
       toast.success("Account created! Please log in.");
       if (onSuccess) onSuccess();
     } catch (error) {
-      const status = (error as { status?: number })?.status;
-      let message = "Something went wrong. Please try again.";
-      if (status === 409) message = "Email already in use.";
+      const message = getErrorMessage(error);
       setFormError(message);
-      toast.error(message);
+      showErrorToast(error);
       console.error("Signup error:", error);
     }
   }

@@ -9,6 +9,11 @@ import {
 import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import { useGetLineupQuery } from "../features/lineups/lineups.api";
+import {
+  getErrorStatus,
+  getErrorMessage,
+  showErrorToast,
+} from "../utils/error";
 
 function formatDateTime(isoString: string | null) {
   if (!isoString) return "—";
@@ -91,16 +96,13 @@ export default function FixtureDetails() {
         const errorJson = await response
           .json()
           .catch(() => ({ error: `HTTP ${response.status}` }));
-        throw new Error(errorJson?.error || `HTTP ${response.status}`);
+        throw { status: response.status, data: errorJson };
       }
 
       toast.success("Availability saved");
       await refetch();
-    } catch (err) {
-      console.error("Availability error", err);
-      const readable =
-        (err as { message?: string })?.message || "Failed to save availability";
-      toast.error(readable);
+    } catch (caughtError) {
+      showErrorToast(caughtError);
     } finally {
       setIsSubmittingAvailability(false);
     }
@@ -135,17 +137,13 @@ export default function FixtureDetails() {
         const errorJson = await response
           .json()
           .catch(() => ({ error: `HTTP ${response.status}` }));
-        throw new Error(errorJson?.error || `HTTP ${response.status}`);
+        throw { status: response.status, data: errorJson };
       }
 
       toast.success("Availability updated");
       await refetch();
-    } catch (err) {
-      console.error("Coach availability error", err);
-      const readable =
-        (err as { message?: string })?.message ||
-        "Failed to update availability";
-      toast.error(readable);
+    } catch (caughtError) {
+      showErrorToast(caughtError);
     } finally {
       setIsSubmittingAvailability(false);
     }
@@ -179,8 +177,7 @@ export default function FixtureDetails() {
         {isError && !isBadId && (
           <section className="rounded-xl border bg-white p-4 shadow-sm">
             <p className="text-sm text-red-600">
-              Failed to load fixture (status{" "}
-              {(error as { status?: number })?.status ?? "?"})
+              {getErrorMessage(error)} (status {getErrorStatus(error) ?? "?"})
             </p>
           </section>
         )}
@@ -240,9 +237,9 @@ export default function FixtureDetails() {
                         name="availability"
                         value={option}
                         checked={playerChoice === option}
-                        onChange={(e) =>
+                        onChange={(event) =>
                           setPlayerChoice(
-                            e.currentTarget.value as "YES" | "NO" | "MAYBE"
+                            event.currentTarget.value as "YES" | "NO" | "MAYBE"
                           )
                         }
                       />

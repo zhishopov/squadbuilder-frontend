@@ -2,6 +2,7 @@ import { useParams } from "react-router-dom";
 import { useGetLineupQuery } from "../features/lineups/lineups.api";
 import LineupEditor from "../features/lineups/components/LineupEditor";
 import Header from "../components/Header";
+import { getErrorStatus, getErrorMessage } from "../utils/error";
 
 export default function Lineup() {
   const params = useParams<{ fixtureId: string }>();
@@ -29,7 +30,8 @@ export default function Lineup() {
     );
   }
 
-  const httpStatus = (error as { status?: number })?.status;
+  const statusCode = getErrorStatus(error);
+  const errorMessage = getErrorMessage(error);
 
   return (
     <>
@@ -37,9 +39,10 @@ export default function Lineup() {
       <main className="mx-auto max-w-3xl p-4">
         <h1 className="text-xl font-semibold mb-4">Lineup</h1>
         <LineupEditor fixtureId={fixtureId} />
-        {isError && httpStatus && httpStatus !== 404 && (
+        {isError && statusCode && statusCode !== 404 && (
           <div className="text-sm text-red-600 mt-3">
-            Failed to load lineup ({httpStatus})
+            Failed to load lineup{statusCode ? ` (${statusCode})` : ""}:
+            {errorMessage}
           </div>
         )}
       </main>

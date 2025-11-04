@@ -7,6 +7,8 @@ import {
   useSetAvailabilityMutation,
   type Fixture,
 } from "../dashboard.api";
+import { toast } from "sonner";
+import { getErrorMessage } from "../../../utils/error";
 
 function getNextUpcomingFixture(allFixtures: Fixture[] | undefined) {
   if (!allFixtures || allFixtures.length === 0) return null;
@@ -14,7 +16,7 @@ function getNextUpcomingFixture(allFixtures: Fixture[] | undefined) {
   const currentTime = Date.now();
 
   const upcomingFixtures = allFixtures.filter((fixture) => {
-    const fixtureTime = new Date(fixture.date).getTime();
+    const fixtureTime = new Date(fixture.kickoffAt).getTime();
     const isFuture = !Number.isNaN(fixtureTime) && fixtureTime >= currentTime;
     const isUpcoming = !fixture.status || fixture.status === "UPCOMING";
     return isFuture && isUpcoming;
@@ -23,7 +25,8 @@ function getNextUpcomingFixture(allFixtures: Fixture[] | undefined) {
   if (upcomingFixtures.length === 0) return null;
 
   upcomingFixtures.sort(
-    (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()
+    (a, b) =>
+      new Date(a.kickoffAt).getTime() - new Date(b.kickoffAt).getTime()
   );
 
   return upcomingFixtures[0];
@@ -66,8 +69,10 @@ export default function AvailabilityCard() {
         fixtureId: nextFixture.id,
         status,
       }).unwrap();
+      toast.success("Availability updated");
     } catch (error) {
-      console.error("Failed to set availability:", error);
+      const message = getErrorMessage(error);
+      toast.error(message);
     }
   }
 
@@ -116,8 +121,8 @@ export default function AvailabilityCard() {
       <h2 className="text-lg font-semibold mb-1">Your Availability</h2>
 
       <p className="text-sm text-gray-600 mb-3">
-        Next Match: <span className="font-medium">{nextFixture.opponent}</span>
-        {new Date(nextFixture.date).toLocaleString()}
+        Next Match: <span className="font-medium">{nextFixture.opponent}</span>{" "}
+        {new Date(nextFixture.kickoffAt).toLocaleString()}
         {nextFixture.location ? `${nextFixture.location}` : ""}
       </p>
 
