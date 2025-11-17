@@ -20,7 +20,12 @@ export default function AuthCard() {
       <p className="text-sm text-center mt-6">
         {isLogin ? "Don't have an account?" : "Already have an account?"}{" "}
         <button
-          className="text-emerald-600 hover:underline font-semibold"
+          className="font-semibold text-emerald-700 hover:text-emerald-900 relative
+                     transition-all duration-300
+                     before:absolute before:inset-0 before:rounded-lg
+                     before:bg-gradient-to-r before:from-emerald-400/40 before:to-indigo-400/40
+                     before:opacity-0 before:blur-md before:transition-all before:duration-300
+                     hover:before:opacity-100 hover:before:blur-lg"
           onClick={() => setIsLogin(!isLogin)}
         >
           {isLogin ? "Sign up" : "Login"}
