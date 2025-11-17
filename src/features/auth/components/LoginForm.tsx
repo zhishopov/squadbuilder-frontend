@@ -39,18 +39,40 @@ export default function LoginForm({ onSuccess }: Props) {
         type="email"
         placeholder="Email address"
         value={email}
-        onChange={(e) => setEmail(e.target.value)}
+        onChange={(event) => setEmail(event.target.value)}
         required
-        className="border border-gray-300 rounded-lg p-2"
+        className="
+          w-full rounded-xl border border-gray-300 bg-white/90
+          px-3 py-2.5 text-sm
+          placeholder:text-gray-400
+          shadow-sm
+          hover:border-emerald-300
+          focus:outline-none
+          focus:ring-2 focus:ring-emerald-400 focus:border-emerald-500
+          focus:shadow-lg focus:shadow-emerald-200/70
+          focus:-translate-y-0.5
+          transition-all duration-300
+        "
       />
 
       <input
         type="password"
         placeholder="Password"
         value={password}
-        onChange={(e) => setPassword(e.target.value)}
+        onChange={(event) => setPassword(event.target.value)}
         required
-        className="border border-gray-300 rounded-lg p-2"
+        className="
+          w-full rounded-xl border border-gray-300 bg-white/90
+          px-3 py-2.5 text-sm
+          placeholder:text-gray-400
+          shadow-sm
+          hover:border-emerald-300
+          focus:outline-none
+          focus:ring-2 focus:ring-emerald-400 focus:border-emerald-500
+          focus:shadow-lg focus:shadow-emerald-200/70
+          focus:-translate-y-0.5
+          transition-all duration-300
+        "
       />
 
       {formError && <p className="text-red-500 text-sm">{formError}</p>}
@@ -58,7 +80,15 @@ export default function LoginForm({ onSuccess }: Props) {
       <button
         type="submit"
         disabled={isLoading}
-        className="bg-emerald-600 hover:bg-emerald-700 text-white font-semibold py-2 rounded-lg transition flex justify-center"
+        className="
+          bg-emerald-600 hover:bg-emerald-700
+          disabled:opacity-70
+          text-white font-semibold py-2.5 rounded-xl
+          shadow-md shadow-emerald-100
+          flex justify-center
+          transition-all duration-300
+          hover:shadow-emerald-200 hover:-translate-y-0.5
+        "
       >
         {isLoading ? <span className="animate-spin">🔄</span> : "Login"}
       </button>
