@@ -4,7 +4,6 @@ import type { RootState } from "../store";
 import { useMySquadQuery } from "../features/dashboard/dashboard.api";
 import SquadCard from "../features/dashboard/components/SquadCard";
 import NextFixtureCard from "../features/dashboard/components/NextFixtureCard";
-import AvailabilityCard from "../features/dashboard/components/AvailabilityCard";
 import CreateSquadCard from "../features/squads/components/CreateSquadCard";
 import { getErrorMessage } from "../utils/error";
 import { Link } from "react-router-dom";
@@ -103,14 +102,12 @@ export default function Dashboard() {
                 <SquadCard />
                 <NextFixtureCard />
               </div>
-              <div className="grid gap-4 md:grid-cols-2">
-                <AvailabilityCard />
-              </div>
               <div className="flex justify-center">
-                <section className="w-full max-w-md rounded-2xl border border-emerald-100 bg-white/80 p-4 text-sm text-slate-700 shadow-md shadow-emerald-50">
-                  <h2 className="mb-2 text-base font-semibold text-slate-900 text-center">
+                <section className="w-full max-w-md rounded-2xl border border-emerald-100 bg-white/80 p-5 shadow-lg shadow-emerald-100 transition-all duration-300 hover:shadow-emerald-200/70 hover:shadow-xl hover:-translate-y-1 hover:bg-white">
+                  <h2 className="mb-3 text-base font-semibold text-slate-900 text-center">
                     Quick tips
                   </h2>
+
                   <ul className="space-y-3 w-full text-left">
                     {[
                       "Confirm lineup before match day.",
@@ -118,7 +115,7 @@ export default function Dashboard() {
                       "Use the Fixtures page to plan ahead.",
                     ].map((tip) => (
                       <li key={tip}>
-                        <div className="flex items-start gap-3 rounded-xl bg-white/70 backdrop-blur-sm border border-emerald-100 px-4 py-3 shadow-md shadow-emerald-50 transition-all duration-300 hover:bg-white hover:shadow-lg hover:shadow-emerald-200/60 hover:border-emerald-200 hover:-translate-y-0.5">
+                        <div className="group flex items-start gap-3 rounded-xl bg-white/70 backdrop-blur-sm border border-emerald-100 px-4 py-3 shadow-md shadow-emerald-50 transition-all duration-300 hover:bg-white hover:shadow-lg hover:shadow-emerald-200/60 hover:border-emerald-200 hover:-translate-y-0.5">
                           <span className="mt-2 h-2 w-2 rounded-full bg-emerald-500 transition-all duration-300 group-hover:bg-emerald-600 group-hover:scale-125" />
                           <span className="text-sm font-medium text-slate-800 transition-all duration-300 group-hover:text-emerald-800">
                             {tip}

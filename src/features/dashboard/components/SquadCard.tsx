@@ -22,22 +22,26 @@ export default function SquadCard() {
 
   if (isSquadLoading || isMembersLoading) {
     return (
-      <section className="mb-6 rounded-xl border bg-white p-4 shadow-sm">
-        <h2 className="text-lg font-semibold mb-2">Your Squad</h2>
-        <p className="text-sm text-gray-600">Loading squad…</p>
+      <section className="rounded-2xl border border-emerald-100 bg-white/80 p-5 shadow-lg shadow-emerald-50 transition-all">
+        <h2 className="text-lg font-semibold text-slate-900 mb-2">
+          Your Squad
+        </h2>
+        <p className="text-sm text-slate-600">Loading squad…</p>
       </section>
     );
   }
 
   if (hasSquadError) {
     const friendly = getErrorMessage(squadError);
+
     return (
-      <section className="mb-6 rounded-xl border bg-white p-4 shadow-sm space-y-2">
-        <h2 className="text-lg font-semibold mb-2">Your Squad</h2>
+      <section className="rounded-2xl border border-red-100 bg-white/80 p-5 shadow-lg shadow-red-50 space-y-3 transition-all">
+        <h2 className="text-lg font-semibold text-slate-900">Your Squad</h2>
         <p className="text-sm text-red-600">{friendly}</p>
+
         <button
           onClick={() => refetchSquad()}
-          className="rounded-md bg-gray-800 px-3 py-1.5 text-white text-sm hover:bg-gray-700"
+          className="rounded-full bg-slate-900 px-4 py-1.5 text-sm font-medium text-white transition-all duration-200 hover:bg-slate-800 hover:-translate-y-0.5"
         >
           Try again
         </button>
@@ -47,22 +51,26 @@ export default function SquadCard() {
 
   if (!currentSquad) {
     return (
-      <section className="mb-6 rounded-xl border bg-white p-4 shadow-sm">
-        <h2 className="text-lg font-semibold mb-2">Your Squad</h2>
-        <p className="text-sm text-gray-700">You don’t have a squad yet.</p>
+      <section className="rounded-2xl border border-emerald-100 bg-white/80 p-5 shadow-lg shadow-emerald-50 transition-all">
+        <h2 className="text-lg font-semibold text-slate-900 mb-2">
+          Your Squad
+        </h2>
+        <p className="text-sm text-slate-700">You don’t have a squad yet.</p>
       </section>
     );
   }
 
   if (hasMembersError) {
     const friendly = getErrorMessage(membersError);
+
     return (
-      <section className="mb-6 rounded-xl border bg-white p-4 shadow-sm space-y-2">
-        <h2 className="text-lg font-semibold mb-2">Your Squad</h2>
+      <section className="rounded-2xl border border-red-100 bg-white/80 p-5 shadow-lg shadow-red-50 space-y-3 transition-all">
+        <h2 className="text-lg font-semibold text-slate-900">Your Squad</h2>
         <p className="text-sm text-red-600">{friendly}</p>
+
         <button
           onClick={() => refetchMembers()}
-          className="rounded-md bg-gray-800 px-3 py-1.5 text-white text-sm hover:bg-gray-700"
+          className="rounded-full bg-slate-900 px-4 py-1.5 text-sm font-medium text-white transition-all duration-200 hover:bg-slate-800 hover:-translate-y-0.5"
         >
           Try again
         </button>
@@ -73,13 +81,17 @@ export default function SquadCard() {
   const memberCount = squadMembers?.length ?? 0;
 
   return (
-    <section className="mb-6 rounded-xl border bg-white p-4 shadow-sm">
-      <h2 className="text-lg font-semibold mb-2">Your Squad</h2>
-      <p className="text-sm">
-        <span className="font-medium">Name:</span> {currentSquad.name}
+    <section className="rounded-2xl border border-emerald-100 bg-white/80 p-5 shadow-lg shadow-emerald-100 transition-all duration-300 hover:shadow-xl hover:shadow-emerald-200/70 hover:-translate-y-1 hover:bg-white">
+      <h2 className="text-lg font-semibold text-slate-900 mb-3">Your Squad</h2>
+
+      <p className="text-sm text-slate-700 mb-1">
+        <span className="font-semibold text-emerald-700">Name:</span>{" "}
+        {currentSquad.name}
       </p>
-      <p className="text-sm">
-        <span className="font-medium">Members:</span> {memberCount}
+
+      <p className="text-sm text-slate-700">
+        <span className="font-semibold text-emerald-700">Members:</span>{" "}
+        {memberCount}
       </p>
     </section>
   );

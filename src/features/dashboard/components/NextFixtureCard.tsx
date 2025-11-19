@@ -42,22 +42,25 @@ export default function NextFixtureCard() {
 
   if (isSquadLoading || isFixturesLoading) {
     return (
-      <section className="mb-6 rounded-xl border bg-white p-4 shadow-sm">
-        <h2 className="text-lg font-semibold mb-2">Next Fixture</h2>
-        <p className="text-sm text-gray-600">Loading…</p>
+      <section className="rounded-2xl border border-emerald-100 bg-white/80 p-5 shadow-lg shadow-emerald-50">
+        <h2 className="mb-2 text-lg font-semibold text-slate-900">
+          Next Fixture
+        </h2>
+        <p className="text-sm text-slate-600">Loading…</p>
       </section>
     );
   }
 
   if (hasFixturesError) {
     const friendly = getErrorMessage(fixturesError);
+
     return (
-      <section className="mb-6 rounded-xl border bg-white p-4 shadow-sm space-y-2">
-        <h2 className="text-lg font-semibold mb-2">Next Fixture</h2>
+      <section className="rounded-2xl border border-red-100 bg-white/80 p-5 shadow-lg shadow-red-50 space-y-3">
+        <h2 className="text-lg font-semibold text-slate-900">Next Fixture</h2>
         <p className="text-sm text-red-600">{friendly}</p>
         <button
           onClick={() => refetchFixtures()}
-          className="rounded-md bg-gray-800 px-3 py-1.5 text-white text-sm hover:bg-gray-700"
+          className="rounded-full bg-slate-900 px-4 py-1.5 text-sm font-medium text-white transition-all duration-200 hover:bg-slate-800 hover:-translate-y-0.5"
         >
           Try again
         </button>
@@ -67,9 +70,11 @@ export default function NextFixtureCard() {
 
   if (!nextFixture) {
     return (
-      <section className="mb-6 rounded-xl border bg-white p-4 shadow-sm">
-        <h2 className="text-lg font-semibold mb-2">Next Fixture</h2>
-        <p className="text-sm text-gray-700">No upcoming fixture.</p>
+      <section className="rounded-2xl border border-emerald-100 bg-white/80 p-5 shadow-lg shadow-emerald-50">
+        <h2 className="mb-2 text-lg font-semibold text-slate-900">
+          Next Fixture
+        </h2>
+        <p className="text-sm text-slate-700">No upcoming fixture.</p>
       </section>
     );
   }
@@ -81,54 +86,57 @@ export default function NextFixtureCard() {
     lineup.selectedPlayerIds.includes(currentUser.id);
 
   return (
-    <section className="mb-6 rounded-xl border bg-white p-4 shadow-sm">
-      <h2 className="text-lg font-semibold mb-2">Next Fixture</h2>
+    <section className="rounded-2xl border border-emerald-100 bg-white/80 p-5 shadow-lg shadow-emerald-100 transition-all duration-300 hover:-translate-y-1 hover:bg-white hover:shadow-xl hover:shadow-emerald-200/70">
+      <h2 className="mb-3 text-lg font-semibold text-slate-900">
+        Next Fixture
+      </h2>
 
       <div className="text-sm">
-        <p className="font-medium">{nextFixture.opponent}</p>
-        <p className="text-gray-500">
+        <p className="font-medium text-slate-900">{nextFixture.opponent}</p>
+        <p className="text-slate-500">
           {new Date(nextFixture.kickoffAt).toLocaleString()}
           {nextFixture.location && ` — ${nextFixture.location}`}
         </p>
         {nextFixture.notes && (
-          <p className="text-xs text-gray-600 mt-1">{nextFixture.notes}</p>
+          <p className="mt-1 text-xs text-slate-600">{nextFixture.notes}</p>
         )}
       </div>
 
       {isLineupLoading ? (
-        <p className="mt-2 text-xs text-gray-500">Checking lineup…</p>
+        <p className="mt-3 text-xs text-slate-500">Checking lineup…</p>
       ) : hasLineupError ? (
-        <div className="mt-2 space-y-2">
-          <p className="text-xs text-red-600">
-            {getErrorMessage(lineupError)}
-          </p>
+        <div className="mt-3 space-y-2">
+          <p className="text-xs text-red-600">{getErrorMessage(lineupError)}</p>
           <button
             onClick={() => refetchLineup()}
-            className="rounded-md bg-gray-800 px-2 py-1 text-white text-xs hover:bg-gray-700"
+            className="rounded-full bg-slate-900 px-3 py-1 text-xs font-medium text-white transition-all duration-200 hover:bg-slate-800 hover:-translate-y-0.5"
           >
             Try again
           </button>
         </div>
       ) : isPublished ? (
         <div
-          className={`mt-3 rounded-md px-3 py-2 text-xs font-medium ${
-            isSelected
-              ? "bg-emerald-50 text-emerald-700"
-              : "bg-amber-50 text-amber-700"
-          }`}
+          className={`
+            mt-3 rounded-xl px-3 py-2 text-xs font-medium
+            ${
+              isSelected
+                ? "bg-emerald-50 text-emerald-700 border border-emerald-100"
+                : "bg-amber-50 text-amber-700 border border-amber-100"
+            }
+          `}
         >
           {isSelected
             ? "You're selected for this match."
             : "Lineup published. You are not selected."}
         </div>
       ) : (
-        <p className="mt-3 text-xs text-gray-600">Lineup not published yet.</p>
+        <p className="mt-3 text-xs text-slate-600">Lineup not published yet.</p>
       )}
 
       <div className="mt-4">
         <Link
           to={`/fixtures/${nextFixture.id}`}
-          className="inline-block rounded-md bg-emerald-600 px-3 py-1.5 text-white text-sm hover:bg-emerald-700"
+          className="inline-flex items-center justify-center rounded-full bg-emerald-600 px-4 py-1.5 text-sm font-semibold text-white shadow-sm transition-all duration-200 hover:bg-emerald-700 hover:shadow-md hover:-translate-y-0.5"
         >
           View & Set Availability
         </Link>
