@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import AuthCard from "../features/auth/components/AuthCard";
 import { useAuth } from "../features/auth/useAuth";
-import squadbuilderLogo from "../../public/logo.png";
+import squadbuilderLogo from "/logo.png";
 
 export default function LandingPage() {
   const navigate = useNavigate();
